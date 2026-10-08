@@ -3,7 +3,7 @@ Vantoryx — AI Systems & Inference Platform
 Aim - Buil an appliaction platform, starting with RAG and progressively adding hybrid retrieval, reranking, agentic workflows, MCP tools, 
 evaluation, observability, local inference, GPU serving, quantization, AWS deployment, load testing, and cost/latency optimization.
 
-| Version | What you build     | What you demonstrate                 |
+| Version | Skill              | Description                          |
 | ------- | ------------------ | ------------------------------------ |
 | **V1**  | Basic RAG          | Embeddings, chunking, pgvector       |
 | **V2**  | Hybrid + reranking | BM25 + vector + reranker             |
