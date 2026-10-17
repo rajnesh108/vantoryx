@@ -14,6 +14,7 @@ export interface Citation {
   chunkId: string;
   documentId: string;
   documentName: string;
+  category?: string;
   pageStart: number | null;
   pageEnd: number | null;
   content: string;
@@ -34,7 +35,7 @@ export interface HealthStatus {
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
+  const response = await fetch(url, { ...init, credentials: "include" });
   if (response.status === 204) {
     return undefined as T;
   }
@@ -66,6 +67,29 @@ export function askQuestion(question: string, documentIds: string[]): Promise<Ch
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ question, documentIds }),
   });
+}
+
+export function login(username: string, password: string): Promise<{ username: string }> {
+  return request("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+export function logout(): Promise<void> {
+  return request("/api/auth/logout", { method: "POST" });
+}
+
+export async function currentUser(): Promise<{ username: string } | null> {
+  const response = await fetch("/api/auth/me", { credentials: "include" });
+  if (response.status === 401) return null;
+  const text = await response.text();
+  const body = text ? (JSON.parse(text) as { username?: string; error?: string }) : {};
+  if (!response.ok || !body.username) {
+    throw new Error(body.error || `Request failed (${response.status})`);
+  }
+  return { username: body.username };
 }
 
 export async function getHealth(): Promise<HealthStatus> {
