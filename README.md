@@ -1,7 +1,9 @@
-Vantoryx — AI Systems & Inference Platform
+# Vantoryx — AI Systems & Inference Platform
 
 Aim - Buil an appliaction platform, starting with RAG and progressively adding hybrid retrieval, reranking, agentic workflows, MCP tools, 
 evaluation, observability, local inference, GPU serving, quantization, AWS deployment, load testing, and cost/latency optimization.
+
+How branches move is in [docs/github-flow.md](docs/github-flow.md).
 
 | Version | Skill              | Description                          |
 | ------- | ------------------ | ------------------------------------ |
