@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { DOCUMENT_CATEGORIES } from "../categories";
 import { asyncHandler } from "../lib/http";
 import { embedTexts } from "../services/embeddingClient";
 import { generateAnswer } from "../services/llm";
@@ -8,6 +9,7 @@ import { searchSimilar } from "../services/retrieval";
 const chatSchema = z.object({
   question: z.string().trim().min(1, "Enter a question.").max(2000, "Question must be 2000 characters or fewer."),
   documentIds: z.array(z.string().uuid()).max(50).optional(),
+  categories: z.array(z.enum(DOCUMENT_CATEGORIES)).max(DOCUMENT_CATEGORIES.length).optional(),
 });
 
 export const chatRouter = Router();
@@ -17,12 +19,14 @@ chatRouter.post(
   asyncHandler(async (req, res) => {
     const body = chatSchema.parse(req.body);
     const documentIds = body.documentIds ?? [];
+    const categories = body.categories ?? [];
     const [queryEmbedding] = await embedTexts([body.question]);
-    const citations = await searchSimilar(queryEmbedding, documentIds);
+    const citations = await searchSimilar(queryEmbedding, { documentIds, categories });
 
     if (citations.length === 0) {
+      const scope = categories.length > 0 ? " in the selected categories" : "";
       res.json({
-        answer: "No indexed passages matched this question. Upload a text-based PDF and wait until it is ready.",
+        answer: `No indexed passages${scope} matched this question. A ready document in that scope is required before search can return passages.`,
         citations: [],
         model: null,
       });

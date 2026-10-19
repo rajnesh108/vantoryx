@@ -5,6 +5,7 @@ interface DocumentRow {
   id: string;
   original_name: string;
   storage_path: string;
+  category: string;
   status: DocumentStatus;
   page_count: number | null;
   error: string | null;
@@ -13,7 +14,7 @@ interface DocumentRow {
 }
 
 const documentSelect = `
-  SELECT d.id, d.original_name, d.storage_path, d.status, d.page_count, d.error, d.created_at,
+  SELECT d.id, d.original_name, d.storage_path, d.category, d.status, d.page_count, d.error, d.created_at,
          COUNT(c.id)::int AS chunk_count
   FROM documents d
   LEFT JOIN chunks c ON c.document_id = d.id
@@ -23,6 +24,7 @@ function mapDocument(row: DocumentRow): DocumentItem {
   return {
     id: row.id,
     originalName: row.original_name,
+    category: row.category,
     status: row.status,
     pageCount: row.page_count,
     chunkCount: Number(row.chunk_count ?? 0),
@@ -35,11 +37,12 @@ export async function insertDocument(input: {
   id: string;
   originalName: string;
   storagePath: string;
+  category: string;
 }): Promise<DocumentItem> {
   await pool.query(
-    `INSERT INTO documents (id, original_name, storage_path, status)
-     VALUES ($1, $2, $3, 'processing')`,
-    [input.id, input.originalName, input.storagePath]
+    `INSERT INTO documents (id, original_name, storage_path, category, status)
+     VALUES ($1, $2, $3, $4, 'processing')`,
+    [input.id, input.originalName, input.storagePath, input.category]
   );
   const created = await getDocument(input.id);
   if (!created) {
