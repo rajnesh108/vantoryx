@@ -1,6 +1,7 @@
 import express, { type NextFunction, type Request, type Response } from "express";
 import cors from "cors";
 import { ZodError } from "zod";
+import { authRouter } from "./routes/auth";
 import { chatRouter } from "./routes/chat";
 import { documentsRouter } from "./routes/documents";
 import { healthRouter } from "./routes/health";
@@ -11,10 +12,12 @@ export function buildApp() {
   app.use(
     cors({
       origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+      credentials: true,
     })
   );
   app.use(express.json({ limit: "1mb" }));
   app.use("/api/health", healthRouter);
+  app.use("/api/auth", authRouter);
   app.use("/api/documents", documentsRouter);
   app.use("/api/chat", chatRouter);
   app.use(errorHandler);
