@@ -22,7 +22,7 @@ const uploadDir = process.env.UPLOAD_DIR?.trim()
 export const config = {
   repoRoot,
   port: intEnv("PORT", 4000, 1, 65535),
-  databaseUrl: process.env.DATABASE_URL?.trim() || "postgresql://rag:rag@localhost:5432/medical_rag",
+  databaseUrl: process.env.DATABASE_URL?.trim() || "postgresql://rag:rag@localhost:5432/vantoryx",
   uploadDir,
   embeddingServiceUrl: (process.env.EMBEDDING_SERVICE_URL || "http://127.0.0.1:8000").replace(/\/$/, ""),
   embeddingTimeoutMs: intEnv("EMBEDDING_TIMEOUT_MS", 180_000, 1_000, 600_000),
@@ -35,6 +35,10 @@ export const config = {
     apiKey: process.env.LLM_API_KEY?.trim() || "",
     model: process.env.LLM_MODEL?.trim() || "llama3.1",
     timeoutMs: intEnv("LLM_TIMEOUT_MS", 120_000, 1_000, 600_000),
+  },
+  admin: {
+    username: process.env.ADMIN_USERNAME?.trim() || "admin",
+    password: process.env.ADMIN_PASSWORD?.trim() || "admin",
   },
 };
 

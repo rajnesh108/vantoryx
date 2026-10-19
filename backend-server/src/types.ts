@@ -3,6 +3,7 @@ export type DocumentStatus = "processing" | "ready" | "failed";
 export interface DocumentItem {
   id: string;
   originalName: string;
+  category: string;
   status: DocumentStatus;
   pageCount: number | null;
   chunkCount: number;
@@ -25,6 +26,7 @@ export interface SearchHit {
   chunkId: string;
   documentId: string;
   documentName: string;
+  category: string;
   pageStart: number | null;
   pageEnd: number | null;
   content: string;
