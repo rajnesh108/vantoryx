@@ -4,7 +4,7 @@ import { DOCUMENT_CATEGORIES } from "../categories";
 import { asyncHandler } from "../lib/http";
 import { embedTexts } from "../services/embeddingClient";
 import { generateAnswer } from "../services/llm";
-import { searchSimilar } from "../services/retrieval";
+import { retrieve } from "../services/retrieval";
 
 const chatSchema = z.object({
   question: z.string().trim().min(1, "Enter a question.").max(2000, "Question must be 2000 characters or fewer."),
@@ -20,8 +20,15 @@ chatRouter.post(
     const body = chatSchema.parse(req.body);
     const documentIds = body.documentIds ?? [];
     const categories = body.categories ?? [];
-    const [queryEmbedding] = await embedTexts([body.question]);
-    const citations = await searchSimilar(queryEmbedding, { documentIds, categories });
+    let queryEmbedding: number[] | null = null;
+    try {
+      const [vector] = await embedTexts([body.question]);
+      queryEmbedding = vector;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Embedding request failed";
+      console.error(`[chat] embedding failed; continuing with keyword search: ${message}`);
+    }
+    const citations = await retrieve(body.question, queryEmbedding, { documentIds, categories });
 
     if (citations.length === 0) {
       const scope = categories.length > 0 ? " in the selected categories" : "";

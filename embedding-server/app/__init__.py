@@ -1,1 +1,1 @@
-"""Local PDF extraction and embedding service."""
+"""Local PDF extraction, embedding, and reranking service."""
