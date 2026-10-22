@@ -7,11 +7,14 @@ from pydantic import BaseModel, Field
 
 from app.embedder import embed_texts, model_status, start_loading
 from app.extractor import extract_pages
+from app.reranker import model_status as reranker_status
+from app.reranker import rerank, start_loading as start_reranker
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     start_loading()
+    start_reranker()
     yield
 
 
@@ -26,9 +29,16 @@ class EmbedRequest(BaseModel):
     texts: list[str] = Field(min_length=1, max_length=64)
 
 
+class RerankRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=2000)
+    texts: list[str] = Field(min_length=1, max_length=32)
+
+
 @app.get("/health")
 def health() -> dict:
-    return model_status()
+    status = model_status()
+    status["reranker"] = reranker_status()
+    return status
 
 
 @app.post("/extract")
@@ -55,6 +65,17 @@ def embed(body: EmbedRequest) -> dict:
         "model": model_status()["model"],
         "dimension": len(vectors[0]),
     }
+
+
+@app.post("/rerank")
+def rerank_texts(body: RerankRequest) -> dict:
+    try:
+        scores = rerank(body.query, body.texts)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    if len(scores) != len(body.texts):
+        raise HTTPException(status_code=503, detail="Reranker returned an unexpected number of scores")
+    return {"scores": scores, "model": reranker_status()["model"]}
 
 
 def resolve_pdf(raw_path: str) -> Path:
