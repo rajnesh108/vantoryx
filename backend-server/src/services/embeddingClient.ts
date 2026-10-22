@@ -18,6 +18,11 @@ const embedSchema = z.object({
   dimension: z.number(),
 });
 
+const rerankSchema = z.object({
+  scores: z.array(z.number()),
+  model: z.string(),
+});
+
 export async function extractPdf(storagePath: string): Promise<PageText[]> {
   const body = await postJson("/extract", { path: storagePath });
   try {
@@ -37,6 +42,32 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
     vectors.push(...(await embedBatch(texts.slice(index, index + batchSize))));
   }
   return vectors;
+}
+
+export async function rerankTexts(query: string, texts: string[]): Promise<number[]> {
+  const scores: number[] = [];
+  const batchSize = 32;
+  for (let index = 0; index < texts.length; index += batchSize) {
+    scores.push(...(await rerankBatch(query, texts.slice(index, index + batchSize))));
+  }
+  return scores;
+}
+
+async function rerankBatch(query: string, texts: string[]): Promise<number[]> {
+  const body = await postJson("/rerank", { query, texts });
+  let parsed: z.infer<typeof rerankSchema>;
+  try {
+    parsed = rerankSchema.parse(body);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      throw new HttpError(502, "Embedding service returned an unexpected rerank response");
+    }
+    throw error;
+  }
+  if (parsed.scores.length !== texts.length || parsed.scores.some((score) => !Number.isFinite(score))) {
+    throw new HttpError(502, "Embedding service returned invalid rerank scores");
+  }
+  return parsed.scores;
 }
 
 async function embedBatch(texts: string[]): Promise<number[][]> {
