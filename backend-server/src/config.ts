@@ -13,6 +13,15 @@ function intEnv(name: string, fallback: number, min: number, max: number): numbe
   return value;
 }
 
+function boolEnv(name: string, fallback: boolean): boolean {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === "") return fallback;
+  const value = raw.trim().toLowerCase();
+  if (value === "1" || value === "true" || value === "yes" || value === "on") return true;
+  if (value === "0" || value === "false" || value === "no" || value === "off") return false;
+  throw new Error(`${name} must be true or false`);
+}
+
 const embeddingDim = intEnv("EMBEDDING_DIM", 768, 768, 768);
 
 const uploadDir = process.env.UPLOAD_DIR?.trim()
@@ -30,6 +39,10 @@ export const config = {
   chunkSize: intEnv("CHUNK_SIZE", 1000, 200, 4000),
   chunkOverlap: intEnv("CHUNK_OVERLAP", 180, 0, 1000),
   topK: intEnv("TOP_K", 5, 1, 20),
+  bm25TopK: intEnv("BM25_TOP_K", 20, 1, 100),
+  vectorTopK: intEnv("VECTOR_TOP_K", 20, 1, 100),
+  rerankTopK: intEnv("RERANK_TOP_K", 5, 1, 20),
+  rerankerEnabled: boolEnv("RERANKER_ENABLED", true),
   llm: {
     baseUrl: (process.env.LLM_BASE_URL || "http://127.0.0.1:11434/v1").replace(/\/$/, ""),
     apiKey: process.env.LLM_API_KEY?.trim() || "",
