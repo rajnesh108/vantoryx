@@ -52,6 +52,11 @@ CREATE INDEX IF NOT EXISTS chunks_document_id_idx ON chunks (document_id);
 CREATE INDEX IF NOT EXISTS chunks_embedding_hnsw
   ON chunks USING hnsw (embedding vector_cosine_ops);
 
+ALTER TABLE chunks ADD COLUMN IF NOT EXISTS content_tsv tsvector
+  GENERATED ALWAYS AS (to_tsvector('english', content)) STORED;
+
+CREATE INDEX IF NOT EXISTS chunks_content_tsv_idx ON chunks USING gin (content_tsv);
+
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY,
   username TEXT NOT NULL UNIQUE,

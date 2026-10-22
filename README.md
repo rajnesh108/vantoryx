@@ -5,7 +5,7 @@ evaluation, observability, local inference, GPU serving, quantization, AWS deplo
 
 How branches move is in [docs/github-flow.md](docs/github-flow.md).
 
-| Version | What you build     | What you demonstrate                 |
+| Version | Skill              | Description                          |
 | ------- | ------------------ | ------------------------------------ |
 | **V1**  | Basic RAG          | Embeddings, chunking, pgvector       |
 | **V2**  | Hybrid + reranking | BM25 + vector + reranker             |
