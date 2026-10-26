@@ -43,6 +43,9 @@ export const config = {
   vectorTopK: intEnv("VECTOR_TOP_K", 20, 1, 100),
   rerankTopK: intEnv("RERANK_TOP_K", 5, 1, 20),
   rerankerEnabled: boolEnv("RERANKER_ENABLED", true),
+  agentEnabled: boolEnv("AGENT_ENABLED", true),
+  agentMaxRetries: intEnv("AGENT_MAX_RETRIES", 1, 0, 3),
+  agentMaxQueries: intEnv("AGENT_MAX_QUERIES", 3, 1, 3),
   llm: {
     baseUrl: (process.env.LLM_BASE_URL || "http://127.0.0.1:11434/v1").replace(/\/$/, ""),
     apiKey: process.env.LLM_API_KEY?.trim() || "",
