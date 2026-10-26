@@ -18,6 +18,11 @@ async function main(): Promise<void> {
     console.log(
       `LLM: ${config.llm.model} @ ${config.llm.baseUrl} (api key ${config.llm.apiKey ? "set" : "not set"})`
     );
+    console.log(
+      config.agentEnabled
+        ? `Agent: LangGraph retrieval, ${config.agentMaxRetries} ${config.agentMaxRetries === 1 ? "retry" : "retries"}`
+        : "Agent: off, hybrid retrieval only"
+    );
   });
 }
 
