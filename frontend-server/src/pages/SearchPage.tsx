@@ -30,7 +30,14 @@ export function SearchPage() {
       setTurns((current) =>
         current.map((turn) =>
           turn.id === id
-            ? { ...turn, pending: false, answer: result.answer, citations: result.citations, model: result.model }
+            ? {
+                ...turn,
+                pending: false,
+                answer: result.answer,
+                citations: result.citations,
+                model: result.model,
+                agent: result.agent,
+              }
             : turn
         )
       );

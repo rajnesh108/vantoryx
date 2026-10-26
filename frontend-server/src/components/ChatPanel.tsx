@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Citation } from "../api";
+import type { AgentTrace, Citation } from "../api";
 import { pageLabel } from "../format";
 import { Logo } from "./Logo";
 
@@ -9,6 +9,7 @@ export interface Turn {
   answer?: string;
   citations?: Citation[];
   model?: string | null;
+  agent?: AgentTrace | null;
   error?: string;
   pending?: boolean;
 }
@@ -57,6 +58,14 @@ const FEATURES = [
     icon: "chart",
   },
 ] as const;
+
+const NODE_LABELS = {
+  plan: "Plan",
+  route: "Route",
+  retrieve: "Retrieve",
+  grade: "Grade",
+  rewrite: "Rewrite",
+} as const;
 
 const ORGANIZATIONS: Record<string, string> = {
   who: "WHO",
@@ -177,9 +186,22 @@ export function ChatPanel({ turns, asking, onAsk }: ChatPanelProps) {
                 recommended for people living with HIV, close contacts of active TB cases, and other high-risk groups…
               </p>
             )}
-            {latest?.pending && <p className="pending">Searching trusted healthcare sources…</p>}
+            {latest?.pending && <p className="pending">Planning the search across trusted sources…</p>}
             {latest?.error && <p className="doc-error">{latest.error}</p>}
             {latest?.answer && <AnswerText text={latest.answer} />}
+            {latest?.agent && latest.agent.steps.length > 0 && (
+              <>
+                <h3>Agent</h3>
+                <ul>
+                  {latest.agent.steps.map((step, index) => (
+                    <li key={`${step.node}-${index}`} className="agent-step">
+                      <span>{step.detail}</span>
+                      <span>{NODE_LABELS[step.node]}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
             <h3>
               <DocsIcon /> Sources
             </h3>

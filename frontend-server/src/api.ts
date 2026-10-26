@@ -21,10 +21,24 @@ export interface Citation {
   score: number;
 }
 
+export interface AgentStep {
+  node: "plan" | "route" | "retrieve" | "grade" | "rewrite";
+  detail: string;
+}
+
+export interface AgentTrace {
+  queries: string[];
+  categories: string[];
+  attempts: number;
+  sufficient: boolean;
+  steps: AgentStep[];
+}
+
 export interface ChatResult {
   answer: string;
   citations: Citation[];
   model: string | null;
+  agent?: AgentTrace | null;
 }
 
 export interface HealthStatus {

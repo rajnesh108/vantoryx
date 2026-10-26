@@ -7,18 +7,20 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/chunking.test.ts tests/fusion.test.ts"
+    "test": "tsx --test tests/chunking.test.ts tests/fusion.test.ts tests/agent.test.ts"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
+    "@langchain/core": "^1.2.20",
+    "@langchain/langgraph": "^1.5.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "multer": "^2.4.0",
     "pg": "^8.13.1",
-    "zod": "^3.24.1"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
