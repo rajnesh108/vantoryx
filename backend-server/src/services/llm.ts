@@ -18,6 +18,13 @@ export async function generateAnswer(
   question: string,
   hits: SearchHit[]
 ): Promise<{ text: string; model: string }> {
+  return completeChat(buildMessages(question, hits), 0.1);
+}
+
+export async function completeChat(
+  messages: { role: "system" | "user"; content: string }[],
+  temperature: number
+): Promise<{ text: string; model: string }> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (config.llm.apiKey) {
     headers.Authorization = `Bearer ${config.llm.apiKey}`;
@@ -28,8 +35,8 @@ export async function generateAnswer(
     headers,
     body: JSON.stringify({
       model: config.llm.model,
-      temperature: 0.1,
-      messages: buildMessages(question, hits),
+      temperature,
+      messages,
     }),
     signal: AbortSignal.timeout(config.llm.timeoutMs),
   });

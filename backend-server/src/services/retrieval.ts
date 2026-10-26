@@ -2,7 +2,7 @@ import { pool } from "../db/pool";
 import { toVectorLiteral } from "../db/vector";
 import { config } from "../config";
 import { fuseByReciprocalRank } from "./fusion";
-import { rerankTexts } from "./embeddingClient";
+import { embedTexts, rerankTexts } from "./embeddingClient";
 import type { SearchHit } from "../types";
 
 interface SearchRow {
@@ -16,12 +16,52 @@ interface SearchRow {
   score: number | string;
 }
 
-interface SearchScope {
+export interface SearchScope {
   documentIds?: string[];
   categories?: string[];
 }
 
 const SELECT_HITS = `SELECT c.id, c.document_id, c.content, c.page_start, c.page_end, d.original_name, d.category`;
+
+export async function searchQueries(queries: string[], scope: SearchScope): Promise<SearchHit[]> {
+  const unique = [...new Set(queries.map((query) => query.trim()).filter(Boolean))];
+  if (unique.length === 0) return [];
+
+  let embeddings: Array<number[] | null>;
+  try {
+    embeddings = await embedTexts(unique);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Embedding request failed";
+    console.error(`[retrieve] embedding failed; continuing with keyword search: ${message}`);
+    embeddings = unique.map(() => null);
+  }
+
+  const lists = await Promise.all(
+    unique.map((query, index) => retrieve(query, embeddings[index] ?? null, scope))
+  );
+  return fuseByReciprocalRank(lists);
+}
+
+export async function rerankHits(query: string, hits: SearchHit[]): Promise<SearchHit[]> {
+  if (hits.length === 0) return [];
+  const limit = config.rerankerEnabled ? config.rerankTopK : config.topK;
+  if (!config.rerankerEnabled) return hits.slice(0, limit);
+
+  try {
+    const scores = await rerankTexts(
+      query,
+      hits.map((hit) => hit.content)
+    );
+    return hits
+      .map((hit, index) => ({ ...hit, score: sigmoid(scores[index] ?? 0) }))
+      .sort((left, right) => right.score - left.score || left.chunkId.localeCompare(right.chunkId))
+      .slice(0, limit);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Reranker request failed";
+    console.error(`[retrieve] reranker failed, keeping the latest search order: ${message}`);
+    return hits.slice(0, config.topK);
+  }
+}
 
 export async function retrieve(
   question: string,

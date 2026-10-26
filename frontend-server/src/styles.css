@@ -741,6 +741,8 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--green); 
 
 .answer-card li span:first-child { min-width: 0; }
 .answer-card li span:last-child { color: #7b909c; white-space: nowrap; }
+.answer-card li.agent-step { align-items: baseline; }
+.answer-card li.agent-step span:first-child { white-space: normal; line-height: 1.4; }
 
 .wave-wrap { position: relative; height: 130px; margin-top: 6px; }
 
