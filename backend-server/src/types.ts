@@ -32,3 +32,18 @@ export interface SearchHit {
   content: string;
   score: number;
 }
+
+export type AgentNode = "plan" | "route" | "retrieve" | "grade" | "rewrite";
+
+export interface AgentStep {
+  node: AgentNode;
+  detail: string;
+}
+
+export interface AgentTrace {
+  queries: string[];
+  categories: string[];
+  attempts: number;
+  sufficient: boolean;
+  steps: AgentStep[];
+}
