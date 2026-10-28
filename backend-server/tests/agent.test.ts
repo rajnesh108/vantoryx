@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { compileRetrievalGraph } from "../src/services/agent/graph";
+import { compileRetrievalGraph, toTrace } from "../src/services/agent/graph";
 import {
   isRepeatedQuery,
   normalizeQueries,
@@ -110,6 +110,9 @@ describe("retrieval graph", () => {
     assert.deepEqual(searches, [["tb prevention"]]);
     assert.equal(result.attempts, 1);
     assert.equal(result.sufficient, true);
+    assert.equal(typeof result.steps[0]?.durationMs, "number");
+    assert.deepEqual(result.retrievals, [{ queries: ["tb prevention"], chunkIds: ["passage"], scores: [1] }]);
+    assert.equal(toTrace(result).gradeReason, "The passage states the recommendation.");
     assert.deepEqual(
       result.steps.map((step) => step.node),
       ["plan", "route", "retrieve", "grade"]
@@ -143,6 +146,8 @@ describe("retrieval graph", () => {
     assert.deepEqual(searches, [["tb treatment", "tb prevention"], ["preventive treatment eligibility"]]);
     assert.equal(result.attempts, 2);
     assert.equal(result.sufficient, true);
+    assert.equal(result.retrievals.length, 2);
+    assert.deepEqual(result.retrievals[1]?.chunkIds, ["prevention", "treatment"]);
     assert.equal(result.citations[0]?.chunkId, "prevention");
   });
 

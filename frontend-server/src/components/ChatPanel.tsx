@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { AgentTrace, Citation } from "../api";
+import type { AgentTrace, AnswerOutcome, Citation, Observation } from "../api";
 import { pageLabel } from "../format";
 import { Logo } from "./Logo";
 
@@ -10,6 +10,8 @@ export interface Turn {
   citations?: Citation[];
   model?: string | null;
   agent?: AgentTrace | null;
+  outcome?: AnswerOutcome;
+  observation?: Observation;
   error?: string;
   pending?: boolean;
 }
@@ -118,6 +120,16 @@ export function ChatPanel({ turns, asking, onAsk }: ChatPanelProps) {
               </span>
               <h2>{feature.title}</h2>
               <p>{feature.text}</p>
+              {feature.title === "Observability & Evaluation" && (
+                <>
+                  <a className="feature-more" href="/evaluate">
+                    Open evaluation
+                  </a>
+                  <a className="feature-more" href="/observe">
+                    Open observability
+                  </a>
+                </>
+              )}
             </article>
           ))}
         </div>
@@ -190,7 +202,11 @@ export function ChatPanel({ turns, asking, onAsk }: ChatPanelProps) {
             )}
             {latest?.pending && <p className="pending">Planning the search across trusted sources…</p>}
             {latest?.error && <p className="doc-error">{latest.error}</p>}
+            {latest?.outcome && latest.outcome !== "answered" && (
+              <p className="outcome-label">{latest.outcome === "not_found" ? "Not found" : "Insufficient evidence"}</p>
+            )}
             {latest?.answer && <AnswerText text={latest.answer} />}
+            {latest?.observation && <p className="observe-line">{observationLine(latest.observation)}</p>}
             {latest?.agent && latest.agent.steps.length > 0 && (
               <>
                 <h3>Agent</h3>
@@ -198,7 +214,10 @@ export function ChatPanel({ turns, asking, onAsk }: ChatPanelProps) {
                   {latest.agent.steps.map((step, index) => (
                     <li key={`${step.node}-${index}`} className="agent-step">
                       <span>{step.detail}</span>
-                      <span>{NODE_LABELS[step.node]}</span>
+                      <span>
+                        {NODE_LABELS[step.node]}
+                        {step.durationMs != null ? ` · ${step.durationMs} ms` : ""}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -255,6 +274,25 @@ export function ChatPanel({ turns, asking, onAsk }: ChatPanelProps) {
 function organizationName(category: string | undefined): string {
   if (!category) return ORGANIZATIONS.other;
   return ORGANIZATIONS[category.toLowerCase()] ?? ORGANIZATIONS.other;
+}
+
+function observationLine(observation: Observation): string {
+  const tokens = observation.usage.promptTokens + observation.usage.completionTokens;
+  const retrieve = observation.retrieveMs == null ? "" : ` · retrieve ${observation.retrieveMs} ms`;
+  const generate = observation.generateMs == null ? "" : ` · answer ${observation.generateMs} ms`;
+  const estimated = observation.usage.estimated ? " estimated" : "";
+  return `${latencyLabel(observation.latencyMs)}${retrieve}${generate} · ${observation.usage.calls} ${observation.usage.calls === 1 ? "call" : "calls"} · ${tokens} tokens${estimated} · ${moneyLabel(observation.usage.costUsd)}`;
+}
+
+function latencyLabel(value: number): string {
+  if (value >= 1000) return `${(value / 1000).toFixed(1)} s`;
+  return `${Math.round(value)} ms`;
+}
+
+function moneyLabel(value: number): string {
+  if (value === 0) return "$0";
+  if (value < 0.0001) return "<$0.0001";
+  return `$${value.toFixed(4)}`;
 }
 
 function AnswerText({ text }: { text: string }) {
