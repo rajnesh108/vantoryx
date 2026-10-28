@@ -1,18 +1,30 @@
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
+import type { ToolCall, ToolCatalogEntry } from "../mcp/catalog";
+import { toolCitation } from "../mcp/catalog";
 import type { AgentStep, AgentTrace, SearchHit } from "../../types";
 import {
+  appendCitation,
   brief,
   isRepeatedQuery,
   normalizeQueries,
   preferIncoming,
+  questionMayNeedTool,
   retrievalScope,
   selectCategories,
   shouldRewrite,
 } from "./decisions";
 
+export interface ToolBridge {
+  list: () => Promise<{ tools: ToolCatalogEntry[]; error: string | null }>;
+  choose: (question: string, tools: ToolCatalogEntry[], gradeReason: string) => Promise<{ call: ToolCall | null; reason: string }>;
+  call: (choice: ToolCall) => Promise<string>;
+}
+
 export interface AgentDeps {
   maxQueries: number;
   maxRetries: number;
+  maxToolCalls?: number;
+  tools?: ToolBridge | null;
   plan: (question: string) => Promise<{ queries: string[]; reason: string }>;
   route: (question: string, allowed: string[]) => Promise<{ categories: string[]; reason: string }>;
   search: (queries: string[], scope: { documentIds: string[]; categories: string[] }) => Promise<SearchHit[]>;
@@ -37,6 +49,8 @@ const RetrievalState = Annotation.Root({
   attempts: Annotation<number>({ reducer: (_left, right) => right, default: () => 0 }),
   stop: Annotation<boolean>({ reducer: (_left, right) => right, default: () => false }),
   gradeReason: Annotation<string>({ reducer: (_left, right) => right, default: () => "" }),
+  toolAttempts: Annotation<number>({ reducer: (_left, right) => right, default: () => 0 }),
+  reviewTool: Annotation<boolean>({ reducer: (_left, right) => right, default: () => false }),
   steps: Annotation<AgentStep[]>({
     reducer: (left, right) => (left ?? []).concat(right ?? []),
     default: () => [],
@@ -46,6 +60,9 @@ const RetrievalState = Annotation.Root({
 export type RetrievalSnapshot = typeof RetrievalState.State;
 
 export function compileRetrievalGraph(deps: AgentDeps) {
+  const maxToolCalls = deps.maxToolCalls ?? 0;
+  const toolBridge = deps.tools ?? null;
+
   const plan = async (state: RetrievalSnapshot) => {
     try {
       const decision = await deps.plan(state.question);
@@ -90,10 +107,13 @@ export function compileRetrievalGraph(deps: AgentDeps) {
       state.allowedCategories,
       state.categories
     );
+    const documents = state.citations.filter((hit) => hit.category !== "tool");
+    const keptTools = state.citations.filter((hit) => hit.category === "tool");
     const found = await deps.search(state.queries, scope);
-    const citations = await deps.rerank(state.question, preferIncoming(state.citations, found));
+    const reranked = await deps.rerank(state.question, preferIncoming(documents, found));
+    const citations = [...reranked, ...keptTools];
     const where = scope.categories.length > 0 ? ` in ${scope.categories.join(", ")}` : "";
-    const noun = citations.length === 1 ? "passage" : "passages";
+    const noun = reranked.length === 1 ? "passage" : "passages";
     return {
       citations,
       attempts: state.attempts + 1,
@@ -101,7 +121,7 @@ export function compileRetrievalGraph(deps: AgentDeps) {
       steps: [
         {
           node: "retrieve" as const,
-          detail: `Retrieved ${citations.length} ${noun}${where} for: ${state.queries.join("; ")}.`,
+          detail: `Retrieved ${reranked.length} ${noun}${where} for: ${state.queries.join("; ")}.`,
         },
       ],
     };
@@ -111,15 +131,17 @@ export function compileRetrievalGraph(deps: AgentDeps) {
     if (state.citations.length === 0) {
       const reason = "No passages matched the query.";
       const canRetry = shouldRewrite(false, state.attempts, deps.maxRetries);
+      const toolsLeft = toolBridge !== null && state.toolAttempts < maxToolCalls;
+      const calculation = toolsLeft && state.toolAttempts === 0 && questionMayNeedTool(state.question);
+      const detail = calculation || (toolsLeft && !canRetry)
+        ? "No passages matched, so a configured tool can be tried."
+        : canRetry
+          ? "No passages matched, so another search can be tried."
+          : "No passages matched.";
       return {
         sufficient: false,
         gradeReason: reason,
-        steps: [
-          {
-            node: "grade" as const,
-            detail: canRetry ? "No passages matched, so another search can be tried." : "No passages matched.",
-          },
-        ],
+        steps: [{ node: "grade" as const, detail }],
       };
     }
 
@@ -175,13 +197,62 @@ export function compileRetrievalGraph(deps: AgentDeps) {
     }
   };
 
-  const afterGrade = (state: RetrievalSnapshot): "rewrite" | typeof END => {
-    if (state.stop || !shouldRewrite(state.sufficient, state.attempts, deps.maxRetries)) return END;
-    return "rewrite";
+  const useTools = async (state: RetrievalSnapshot) => {
+    const stopped = { toolAttempts: maxToolCalls, reviewTool: false };
+    if (!toolBridge) {
+      return { ...stopped, steps: [{ node: "tool" as const, detail: "No MCP tools are configured." }] };
+    }
+    try {
+      const listed = await toolBridge.list();
+      if (listed.error || listed.tools.length === 0) {
+        const detail = listed.error
+          ? "MCP is not connected, so the current passages were kept."
+          : "No MCP tools are connected, so the current passages were kept.";
+        return { ...stopped, steps: [{ node: "tool" as const, detail }] };
+      }
+      const decision = await toolBridge.choose(state.question, listed.tools, state.gradeReason);
+      if (!decision.call) {
+        const reason = brief(decision.reason) || "No configured tool applies";
+        const sentence = reason.endsWith(".") ? reason : `${reason}.`;
+        return { ...stopped, steps: [{ node: "tool" as const, detail: `${sentence} The current passages were kept.` }] };
+      }
+      const text = await toolBridge.call(decision.call);
+      return {
+        citations: appendCitation(state.citations, toolCitation(decision.call, text, state.toolAttempts + 1)),
+        toolAttempts: state.toolAttempts + 1,
+        reviewTool: true,
+        steps: [
+          {
+            node: "tool" as const,
+            detail: `Called ${decision.call.server}/${decision.call.name}. ${brief(decision.call.reason)}`,
+          },
+        ],
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "MCP tool call failed";
+      console.error(`[agent] MCP tool call failed: ${message}`);
+      return { ...stopped, steps: [{ node: "tool" as const, detail: "The MCP tool call failed, so the current passages were kept." }] };
+    }
+  };
+
+  const afterGrade = (state: RetrievalSnapshot): "rewrite" | "tools" | typeof END => {
+    if (state.stop) return END;
+    const toolsLeft = toolBridge !== null && state.toolAttempts < maxToolCalls;
+    if (toolsLeft && state.toolAttempts === 0 && questionMayNeedTool(state.question)) return "tools";
+    if (state.sufficient) return END;
+    if (shouldRewrite(state.sufficient, state.attempts, deps.maxRetries)) return "rewrite";
+    if (toolsLeft) return "tools";
+    return END;
   };
 
   const afterRewrite = (state: RetrievalSnapshot): "retrieve" | typeof END => {
     return state.stop ? END : "retrieve";
+  };
+
+  const afterTools = (state: RetrievalSnapshot): "grade" | "rewrite" | typeof END => {
+    if (state.reviewTool) return "grade";
+    if (!state.sufficient && shouldRewrite(state.sufficient, state.attempts, deps.maxRetries)) return "rewrite";
+    return END;
   };
 
   return new StateGraph(RetrievalState)
@@ -190,12 +261,14 @@ export function compileRetrievalGraph(deps: AgentDeps) {
     .addNode("retrieve", retrieve)
     .addNode("grade", grade)
     .addNode("rewrite", rewrite)
+    .addNode("tools", useTools)
     .addEdge(START, "plan")
     .addEdge("plan", "route")
     .addEdge("route", "retrieve")
     .addEdge("retrieve", "grade")
     .addConditionalEdges("grade", afterGrade)
     .addConditionalEdges("rewrite", afterRewrite)
+    .addConditionalEdges("tools", afterTools)
     .compile();
 }
 

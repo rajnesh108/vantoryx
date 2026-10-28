@@ -22,7 +22,7 @@ export interface Citation {
 }
 
 export interface AgentStep {
-  node: "plan" | "route" | "retrieve" | "grade" | "rewrite";
+  node: "plan" | "route" | "retrieve" | "grade" | "rewrite" | "tool";
   detail: string;
 }
 
@@ -46,6 +46,7 @@ export interface HealthStatus {
   database: string;
   embeddings: string;
   llm: { model: string; baseUrl: string };
+  mcp?: { enabled: boolean; servers: string[] };
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
