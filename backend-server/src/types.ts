@@ -33,7 +33,7 @@ export interface SearchHit {
   score: number;
 }
 
-export type AgentNode = "plan" | "route" | "retrieve" | "grade" | "rewrite";
+export type AgentNode = "plan" | "route" | "retrieve" | "grade" | "rewrite" | "tool";
 
 export interface AgentStep {
   node: AgentNode;
