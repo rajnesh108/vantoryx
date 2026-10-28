@@ -65,6 +65,7 @@ const NODE_LABELS = {
   retrieve: "Retrieve",
   grade: "Grade",
   rewrite: "Rewrite",
+  tool: "Tool",
 } as const;
 
 const ORGANIZATIONS: Record<string, string> = {
@@ -75,6 +76,7 @@ const ORGANIZATIONS: Record<string, string> = {
   cdc: "CDC",
   nice: "NICE",
   other: "Other publishers",
+  tool: "Tool",
 };
 
 const PREVIEW_SOURCES = [
@@ -216,7 +218,9 @@ export function ChatPanel({ turns, asking, onAsk }: ChatPanelProps) {
               {latest?.citations?.slice(0, 4).map((citation) => (
                 <li key={citation.chunkId}>
                   <span>{organizationName(citation.category)}</span>
-                  <span>{pageLabel(citation.pageStart, citation.pageEnd)}</span>
+                  <span>
+                    {citation.category === "tool" ? citation.documentName : pageLabel(citation.pageStart, citation.pageEnd)}
+                  </span>
                 </li>
               ))}
             </ul>
