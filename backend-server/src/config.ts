@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import path from "path";
+import { bundledCalculatorServer, parseMcpServers } from "./services/mcp/servers";
 
 const repoRoot = path.resolve(__dirname, "../..");
 dotenv.config({ path: path.join(repoRoot, ".env") });
@@ -28,6 +29,17 @@ const uploadDir = process.env.UPLOAD_DIR?.trim()
   ? path.resolve(process.env.UPLOAD_DIR)
   : path.join(repoRoot, "uploads");
 
+const backendDir = path.join(repoRoot, "backend-server");
+const mcpEnabled = boolEnv("MCP_ENABLED", true);
+const mcpMaxCalls = intEnv("MCP_MAX_CALLS", 1, 0, 2);
+const mcpTimeoutMs = intEnv("MCP_TIMEOUT_MS", 20_000, 1_000, 120_000);
+const mcpServers = mcpEnabled
+  ? parseMcpServers(process.env.MCP_SERVERS, {
+      cwd: backendDir,
+      fallback: [bundledCalculatorServer(backendDir)],
+    })
+  : [];
+
 export const config = {
   repoRoot,
   port: intEnv("PORT", 4000, 1, 65535),
@@ -55,6 +67,12 @@ export const config = {
   admin: {
     username: process.env.ADMIN_USERNAME?.trim() || "admin",
     password: process.env.ADMIN_PASSWORD?.trim() || "admin",
+  },
+  mcp: {
+    enabled: mcpEnabled,
+    maxCalls: mcpMaxCalls,
+    timeoutMs: mcpTimeoutMs,
+    servers: mcpServers,
   },
 };
 

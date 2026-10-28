@@ -35,6 +35,10 @@ healthRouter.get(
         model: config.llm.model,
         baseUrl: config.llm.baseUrl,
       },
+      mcp: {
+        enabled: config.mcp.enabled && config.mcp.maxCalls > 0 && config.mcp.servers.length > 0,
+        servers: config.mcp.servers.map((server) => server.name),
+      },
     });
   })
 );

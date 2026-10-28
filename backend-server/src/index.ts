@@ -3,6 +3,7 @@ import { config } from "./config";
 import { migrate } from "./db/migrate";
 import { pool } from "./db/pool";
 import { ensureAdmin } from "./db/users";
+import { closeConnectedTools, warmMcp } from "./services/mcp/session";
 import { ensureUploadDir } from "./services/storage";
 
 async function main(): Promise<void> {
@@ -23,11 +24,39 @@ async function main(): Promise<void> {
         ? `Agent: LangGraph retrieval, ${config.agentMaxRetries} ${config.agentMaxRetries === 1 ? "retry" : "retries"}`
         : "Agent: off, hybrid retrieval only"
     );
+    if (config.mcp.enabled && config.mcp.maxCalls > 0 && config.mcp.servers.length > 0) {
+      void warmMcp();
+    } else {
+      console.log("MCP: off");
+    }
   });
 }
 
+let stopping = false;
+
+async function shutdown(): Promise<void> {
+  if (stopping) return;
+  stopping = true;
+  try {
+    await closeConnectedTools();
+    await pool.end();
+  } catch (error) {
+    console.error(error);
+  } finally {
+    process.exit(0);
+  }
+}
+
+process.once("SIGINT", () => {
+  void shutdown();
+});
+process.once("SIGTERM", () => {
+  void shutdown();
+});
+
 main().catch(async (error) => {
   console.error(error);
+  await closeConnectedTools();
   await pool.end();
   process.exit(1);
 });

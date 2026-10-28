@@ -3,7 +3,9 @@ import { config } from "../../config";
 import type { AgentTrace, SearchHit } from "../../types";
 import { completeChat } from "../llm";
 import { rerankHits, searchQueries } from "../retrieval";
-import { parseGrade, parsePlan, parseRewrite, parseRoute } from "./decisions";
+import { describeTools } from "../mcp/catalog";
+import { callConnectedTool, listConnectedTools } from "../mcp/session";
+import { parseGrade, parsePlan, parseRewrite, parseRoute, parseToolChoice } from "./decisions";
 import { compileRetrievalGraph, toTrace, type RetrievalSnapshot } from "./graph";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -21,6 +23,8 @@ export interface AgentRequest {
   documentIds: string[];
   categories: string[];
 }
+
+const mcpActive = config.mcp.enabled && config.mcp.maxCalls > 0 && config.mcp.servers.length > 0;
 
 const graph = compileRetrievalGraph({
   maxQueries: config.agentMaxQueries,
@@ -66,6 +70,9 @@ If it does not name one, return every allowed category.`,
     const sources = hits
       .map((hit, index) => `[${index + 1}] ${excerpt(hit)}`)
       .join("\n\n");
+    const toolLine = hits.some((hit) => hit.category === "tool")
+      ? " A tool result is evidence for that calculation. It is not a diagnosis or a treatment recommendation."
+      : "";
     const text = await completeChat(
       [
         {
@@ -73,7 +80,7 @@ If it does not name one, return every allowed category.`,
           content: `You check whether retrieved medical passages are enough to answer a question. Return JSON only, with this shape: {"sufficient":true,"reason":"..."}.
 Set sufficient to true only when the passages state the facts the question asks for.
 Set sufficient to false when they are off topic, empty of the asked fact, or missing a part of a comparison.
-Do not use outside knowledge. If you are unsure, set sufficient to false.`,
+Do not use outside knowledge. If you are unsure, set sufficient to false.${toolLine}`,
         },
         { role: "user", content: `Question: ${question}\n\nPassages:\n${sources}` },
       ],
@@ -100,6 +107,41 @@ Do not answer the question. Do not invent clinical facts.`,
     );
     return parseRewrite(text.text);
   },
+  maxToolCalls: mcpActive ? config.mcp.maxCalls : 0,
+  tools: mcpActive
+    ? {
+        list: () => listConnectedTools(),
+        choose: async (question, tools, gradeReason) => {
+          try {
+            const text = await completeChat(
+              [
+                {
+                  role: "system",
+                  content: `You choose at most one configured tool. Return JSON only, with this shape: {"call":false,"reason":"..."} or {"call":true,"server":"...","name":"...","arguments":{},"reason":"..."}.
+Call a tool only when it can compute a number the question asks for.
+Use only numbers written in the question. Do not guess missing numbers.
+Do not answer the question. Do not invent clinical facts.
+If none of the tools apply, set call to false.
+Tools:
+${describeTools(tools)}`,
+                },
+                {
+                  role: "user",
+                  content: `Question: ${question}\nGrade: ${gradeReason || "The passages do not cover the question."}`,
+                },
+              ],
+              0
+            );
+            return parseToolChoice(text.text, tools);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : "Tool choice failed";
+            console.error(`[agent] tool choice failed: ${message}`);
+            return { call: null, reason: "The tool choice could not be read." };
+          }
+        },
+        call: (choice) => callConnectedTool(choice),
+      }
+    : null,
 });
 
 export async function runAgenticRetrieval(input: AgentRequest): Promise<{ citations: SearchHit[]; agent: AgentTrace }> {
