@@ -63,6 +63,18 @@ export async function rerankHits(query: string, hits: SearchHit[]): Promise<Sear
   }
 }
 
+export async function hybridRetrieve(question: string, scope: SearchScope = {}): Promise<SearchHit[]> {
+  let queryEmbedding: number[] | null = null;
+  try {
+    const [vector] = await embedTexts([question]);
+    queryEmbedding = vector ?? null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Embedding request failed";
+    console.error(`[retrieve] embedding failed; continuing with keyword search: ${message}`);
+  }
+  return retrieve(question, queryEmbedding, scope);
+}
+
 export async function retrieve(
   question: string,
   embedding: number[] | null,

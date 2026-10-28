@@ -409,6 +409,21 @@ main.public {
 
 .doc-error { color: var(--warn); font-size: 13px; margin: 8px 0 0; }
 
+.outcome-label {
+  margin: 0 0 6px;
+  color: var(--warn);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.observe-line {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .text-button {
   margin-top: 6px;
   border: 0;
@@ -508,7 +523,7 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--green); 
   .topbar, main { padding-left: 16px; padding-right: 16px; }
   .topbar { flex-direction: column; align-items: start; }
   .topbar-side, .tagline { align-items: flex-start; text-align: left; }
-  main, main.narrow, main.manage, main.public { grid-template-columns: 1fr; }
+  main, main.narrow, main.manage, main.public, main.eval, main.observe { grid-template-columns: 1fr; }
   .search-hero { padding-top: 28px; }
   .search-hero h2 { font-size: 32px; }
   .search-bar { border-radius: 18px; padding-left: 14px; }
@@ -573,6 +588,18 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--green); 
 
 .feature h2 { margin-top: 10px; font-size: 15px; color: #083746; }
 .feature p { margin: 6px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+
+.feature-more {
+  display: inline-block;
+  margin-top: 8px;
+  margin-right: 12px;
+  color: var(--green-deep);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.feature-more:hover { text-decoration: underline; }
 
 .feature-icon {
   display: grid;
@@ -807,3 +834,148 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--green); 
   .source-stack { flex-direction: row; }
   .source-tile { flex: 1; min-height: 64px; }
 }
+
+main.eval,
+main.observe {
+  grid-template-columns: minmax(0, 1100px);
+  justify-content: center;
+  align-content: start;
+}
+
+.eval-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 22px 24px;
+  margin-bottom: 16px;
+}
+
+.eval-card h2 {
+  font-size: 22px;
+  letter-spacing: -0.03em;
+  color: #083746;
+}
+
+.eval-card > p,
+.eval-note,
+.eval-meta,
+.eval-detail p,
+.eval-passages p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.eval-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: end;
+  margin: 16px 0;
+}
+
+.eval-form fieldset {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin: 0;
+  padding: 10px 12px 12px;
+}
+
+.eval-form legend {
+  padding: 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--green-deep);
+}
+
+.eval-form label {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin-right: 12px;
+  font-weight: 600;
+}
+
+.eval-form button {
+  background: var(--green);
+  color: white;
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.eval-form button:hover:not(:disabled) { background: var(--green-deep); }
+.eval-form button:disabled { cursor: not-allowed; opacity: 0.7; }
+
+.eval-scroll { overflow-x: auto; }
+
+.eval-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.eval-table th,
+.eval-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.eval-findings,
+.eval-questions,
+.eval-detail ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.eval-findings li,
+.eval-questions li,
+.eval-detail li {
+  margin: 8px 0;
+  line-height: 1.45;
+}
+
+.eval-questions li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.eval-case {
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+}
+
+.eval-case summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.eval-type {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--green-deep);
+  background: var(--green-soft);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.eval-passages summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+}
+

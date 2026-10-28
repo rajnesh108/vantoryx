@@ -6,7 +6,7 @@ import { rerankHits, searchQueries } from "../retrieval";
 import { describeTools } from "../mcp/catalog";
 import { callConnectedTool, listConnectedTools } from "../mcp/session";
 import { parseGrade, parsePlan, parseRewrite, parseRoute, parseToolChoice } from "./decisions";
-import { compileRetrievalGraph, toTrace, type RetrievalSnapshot } from "./graph";
+import { compileRetrievalGraph, toTrace, type AgentDeps, type RetrievalSnapshot } from "./graph";
 
 const CATEGORY_LABELS: Record<string, string> = {
   who: "World Health Organization",
@@ -26,7 +26,7 @@ export interface AgentRequest {
 
 const mcpActive = config.mcp.enabled && config.mcp.maxCalls > 0 && config.mcp.servers.length > 0;
 
-const graph = compileRetrievalGraph({
+export const retrievalAgentDeps: AgentDeps = {
   maxQueries: config.agentMaxQueries,
   maxRetries: config.agentMaxRetries,
   plan: async (question) => {
@@ -142,7 +142,9 @@ ${describeTools(tools)}`,
         call: (choice) => callConnectedTool(choice),
       }
     : null,
-});
+};
+
+const graph = compileRetrievalGraph(retrievalAgentDeps);
 
 export async function runAgenticRetrieval(input: AgentRequest): Promise<{ citations: SearchHit[]; agent: AgentTrace }> {
   const allowed = input.categories.length > 0 ? input.categories : [...DOCUMENT_CATEGORIES];

@@ -14,6 +14,15 @@ function intEnv(name: string, fallback: number, min: number, max: number): numbe
   return value;
 }
 
+function floatEnv(name: string, fallback: number, min: number, max: number): number {
+  const raw = process.env[name];
+  const value = raw === undefined || raw.trim() === "" ? fallback : Number(raw);
+  if (!Number.isFinite(value) || value < min || value > max) {
+    throw new Error(`${name} must be a number from ${min} to ${max}`);
+  }
+  return value;
+}
+
 function boolEnv(name: string, fallback: boolean): boolean {
   const raw = process.env[name];
   if (raw === undefined || raw.trim() === "") return fallback;
@@ -74,6 +83,12 @@ export const config = {
     timeoutMs: mcpTimeoutMs,
     servers: mcpServers,
   },
+  eval: {
+    promptUsdPerMillion: floatEnv("LLM_PROMPT_USD_PER_MILLION", 0, 0, 1000),
+    completionUsdPerMillion: floatEnv("LLM_COMPLETION_USD_PER_MILLION", 0, 0, 1000),
+  },
+  observationEnabled: boolEnv("OBSERVATION_ENABLED", true),
+  observationLimit: intEnv("OBSERVATION_LIMIT", 200, 1, 1000),
 };
 
 if (config.chunkOverlap >= config.chunkSize) {
