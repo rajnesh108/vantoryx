@@ -1,7 +1,7 @@
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import type { ToolCall, ToolCatalogEntry } from "../mcp/catalog";
 import { toolCitation } from "../mcp/catalog";
-import type { AgentStep, AgentTrace, SearchHit } from "../../types";
+import type { AgentRetrieval, AgentStep, AgentTrace, SearchHit } from "../../types";
 import {
   appendCitation,
   brief,
@@ -52,6 +52,10 @@ const RetrievalState = Annotation.Root({
   toolAttempts: Annotation<number>({ reducer: (_left, right) => right, default: () => 0 }),
   reviewTool: Annotation<boolean>({ reducer: (_left, right) => right, default: () => false }),
   steps: Annotation<AgentStep[]>({
+    reducer: (left, right) => (left ?? []).concat(right ?? []),
+    default: () => [],
+  }),
+  retrievals: Annotation<AgentRetrieval[]>({
     reducer: (left, right) => (left ?? []).concat(right ?? []),
     default: () => [],
   }),
@@ -118,6 +122,13 @@ export function compileRetrievalGraph(deps: AgentDeps) {
       citations,
       attempts: state.attempts + 1,
       previousQueries: state.queries,
+      retrievals: [
+        {
+          queries: [...state.queries],
+          chunkIds: reranked.map((hit) => hit.chunkId),
+          scores: reranked.map((hit) => hit.score),
+        },
+      ],
       steps: [
         {
           node: "retrieve" as const,
@@ -256,12 +267,12 @@ export function compileRetrievalGraph(deps: AgentDeps) {
   };
 
   return new StateGraph(RetrievalState)
-    .addNode("plan", plan)
-    .addNode("route", route)
-    .addNode("retrieve", retrieve)
-    .addNode("grade", grade)
-    .addNode("rewrite", rewrite)
-    .addNode("tools", useTools)
+    .addNode("plan", withDuration(plan))
+    .addNode("route", withDuration(route))
+    .addNode("retrieve", withDuration(retrieve))
+    .addNode("grade", withDuration(grade))
+    .addNode("rewrite", withDuration(rewrite))
+    .addNode("tools", withDuration(useTools))
     .addEdge(START, "plan")
     .addEdge("plan", "route")
     .addEdge("route", "retrieve")
@@ -272,12 +283,26 @@ export function compileRetrievalGraph(deps: AgentDeps) {
     .compile();
 }
 
+function withDuration<T extends { steps?: AgentStep[] }>(
+  node: (state: RetrievalSnapshot) => Promise<T>
+): (state: RetrievalSnapshot) => Promise<T> {
+  return async (state) => {
+    const started = Date.now();
+    const update = await node(state);
+    if (!update.steps) return update;
+    const durationMs = Date.now() - started;
+    return { ...update, steps: update.steps.map((step) => ({ ...step, durationMs })) };
+  };
+}
+
 export function toTrace(state: RetrievalSnapshot): AgentTrace {
   return {
     queries: state.queries,
     categories: state.categories,
     attempts: state.attempts,
     sufficient: state.sufficient,
+    gradeReason: state.gradeReason,
+    retrievals: state.retrievals,
     steps: state.steps,
   };
 }

@@ -1,0 +1,56 @@
+[
+  {
+    "id": "ipt-regimen",
+    "type": "simple",
+    "question": "What medicine does the note list for a six month preventive treatment in people living with HIV?",
+    "expectedOutcome": "answered",
+    "relevantPhrases": ["Isoniazid preventive treatment for a six month course"],
+    "expectedFacts": ["isoniazid"],
+    "forbidden": []
+  },
+  {
+    "id": "diabetes-medicine",
+    "type": "simple",
+    "question": "What first-line medicine does the note name for type 2 diabetes?",
+    "expectedOutcome": "answered",
+    "relevantPhrases": ["Metformin is the first-line medicine"],
+    "expectedFacts": ["metformin"],
+    "forbidden": []
+  },
+  {
+    "id": "ipt-groups",
+    "type": "multi_hop",
+    "question": "Which groups does the note list for preventive treatment: people living with HIV, and household contacts of a person with infectious tuberculosis?",
+    "expectedOutcome": "answered",
+    "relevantPhrases": ["people living with HIV", "Household contacts of a person with infectious tuberculosis"],
+    "expectedFacts": ["HIV", "Household contacts"],
+    "forbidden": []
+  },
+  {
+    "id": "overlap-and-diabetes",
+    "type": "multi_hop",
+    "question": "What does the note say about chunk overlap, and which first-line medicine is named for type 2 diabetes?",
+    "expectedOutcome": "answered",
+    "relevantPhrases": ["Chunk overlap copies the tail", "Metformin is the first-line medicine"],
+    "expectedFacts": ["overlap", "metformin"],
+    "forbidden": []
+  },
+  {
+    "id": "hba1c-hiv",
+    "type": "unanswerable",
+    "question": "What HbA1c result does the note list for people living with HIV?",
+    "expectedOutcome": "insufficient_evidence",
+    "relevantPhrases": [],
+    "expectedFacts": [],
+    "forbidden": ["6.5", "10 mg"]
+  },
+  {
+    "id": "zorvatinib-dose",
+    "type": "unanswerable",
+    "question": "What Zorvatinib dose does the note name for type 2 diabetes?",
+    "expectedOutcome": "insufficient_evidence",
+    "relevantPhrases": [],
+    "expectedFacts": [],
+    "forbidden": ["6.5", "10 mg"]
+  }
+]

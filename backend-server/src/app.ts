@@ -4,7 +4,9 @@ import { ZodError } from "zod";
 import { authRouter } from "./routes/auth";
 import { chatRouter } from "./routes/chat";
 import { documentsRouter } from "./routes/documents";
+import { evaluationRouter } from "./routes/evaluation";
 import { healthRouter } from "./routes/health";
+import { observationsRouter } from "./routes/observations";
 import { HttpError } from "./lib/http";
 
 export function buildApp() {
@@ -20,6 +22,8 @@ export function buildApp() {
   app.use("/api/auth", authRouter);
   app.use("/api/documents", documentsRouter);
   app.use("/api/chat", chatRouter);
+  app.use("/api/evaluation", evaluationRouter);
+  app.use("/api/observations", observationsRouter);
   app.use(errorHandler);
   return app;
 }
