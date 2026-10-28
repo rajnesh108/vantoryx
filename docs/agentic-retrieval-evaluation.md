@@ -1,5 +1,7 @@
 # Agentic Retrieval Evaluation and Optimization
 
+V5 implements this plan. The running design is in [v5.md](./v5.md).
+
 ## Overview
 
 Agentic retrieval extends hybrid retrieval by allowing an agent to plan searches, break complex questions into sub-queries, assess retrieved evidence, and retry when the evidence is insufficient.

@@ -38,6 +38,13 @@ export type AgentNode = "plan" | "route" | "retrieve" | "grade" | "rewrite" | "t
 export interface AgentStep {
   node: AgentNode;
   detail: string;
+  durationMs?: number;
+}
+
+export interface AgentRetrieval {
+  queries: string[];
+  chunkIds: string[];
+  scores: number[];
 }
 
 export interface AgentTrace {
@@ -45,5 +52,7 @@ export interface AgentTrace {
   categories: string[];
   attempts: number;
   sufficient: boolean;
+  gradeReason: string;
+  retrievals: AgentRetrieval[];
   steps: AgentStep[];
 }
