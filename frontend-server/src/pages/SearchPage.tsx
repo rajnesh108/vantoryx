@@ -37,6 +37,8 @@ export function SearchPage() {
                 citations: result.citations,
                 model: result.model,
                 agent: result.agent,
+                outcome: result.outcome,
+                observation: result.observation,
               }
             : turn
         )

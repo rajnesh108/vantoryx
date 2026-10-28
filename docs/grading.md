@@ -28,4 +28,6 @@ sufficient === false && attempts <= maxRetries
 
 With the default `AGENT_MAX_RETRIES=1`, a failed grade allows one rewrite and a second search. A passed grade stops the loop. If the grader itself cannot be reached, the node keeps the current passages and sets `sufficient` to true so a broken model does not trigger another search.
 
+If the last grade is still not sufficient, `POST /api/chat` returns `outcome: insufficient_evidence` and does not ask the model to write an answer. The passages stay on the response as citations. How that outcome is scored is in [v5.md](./v5.md).
+
 `agent.sufficient` on the chat response is this model opinion. It is not a hand label. How to score it against the PDFs is in [agentic-retrieval-evaluation.md](./agentic-retrieval-evaluation.md). The search that feeds the grade is in [v3.md](./v3.md).
