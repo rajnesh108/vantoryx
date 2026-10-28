@@ -1,0 +1,11 @@
+{
+  "name": "medical-rag",
+  "private": true,
+  "description": "Local medical PDF RAG with chunking, embeddings, pgvector, and cited answers.",
+  "scripts": {
+    "dev:api": "npm run dev --prefix backend-server",
+    "dev:web": "npm run dev --prefix frontend-server",
+    "typecheck": "npm run typecheck --prefix backend-server && npm run typecheck --prefix frontend-server",
+    "test": "npm test --prefix backend-server"
+  }
+}
