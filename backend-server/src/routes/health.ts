@@ -2,6 +2,7 @@ import { Router } from "express";
 import { config } from "../config";
 import { pool } from "../db/pool";
 import { asyncHandler } from "../lib/http";
+import { probeLocalLlm } from "../services/localLlm";
 
 export const healthRouter = Router();
 
@@ -26,15 +27,20 @@ healthRouter.get(
       embeddings = "unavailable";
     }
 
+    const reached = await probeLocalLlm({
+      provider: config.llm.provider,
+      model: config.llm.model,
+      baseUrl: config.llm.baseUrl,
+      apiKey: config.llm.apiKey,
+      timeoutMs: 3000,
+    });
+    const llm = { ...reached, family: config.llm.family, gguf: config.llm.gguf || null };
     const ok = database === "ok";
     res.status(ok ? 200 : 503).json({
       status: ok ? "ok" : "degraded",
       database,
       embeddings,
-      llm: {
-        model: config.llm.model,
-        baseUrl: config.llm.baseUrl,
-      },
+      llm,
       mcp: {
         enabled: config.mcp.enabled && config.mcp.maxCalls > 0 && config.mcp.servers.length > 0,
         servers: config.mcp.servers.map((server) => server.name),

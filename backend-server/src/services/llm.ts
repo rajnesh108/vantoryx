@@ -1,25 +1,8 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { z } from "zod";
-import { config } from "../config";
+import { completeOpenAiChat, type ChatMessage } from "./chatProvider";
+import { activeChatTarget } from "./llmChoice";
 import { buildMessages } from "./prompt";
 import type { SearchHit } from "../types";
-
-const completionSchema = z.object({
-  choices: z.array(
-    z.object({
-      message: z.object({
-        content: z.string().nullable().optional(),
-      }),
-    })
-  ),
-  model: z.string().optional(),
-  usage: z
-    .object({
-      prompt_tokens: z.number().nullish(),
-      completion_tokens: z.number().nullish(),
-    })
-    .nullish(),
-});
 
 export interface LlmUsage {
   calls: number;
@@ -86,50 +69,28 @@ export async function generateAnswer(
 }
 
 export async function completeChat(
-  messages: { role: "system" | "user"; content: string }[],
+  messages: ChatMessage[],
   temperature: number
 ): Promise<{ text: string; model: string }> {
   const promptText = messages.map((message) => message.content).join("\n");
   let completionText = "";
   let reported: { prompt?: number | null; completion?: number | null } | undefined;
   try {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (config.llm.apiKey) {
-      headers.Authorization = `Bearer ${config.llm.apiKey}`;
-    }
-
-    const response = await fetch(`${config.llm.baseUrl}/chat/completions`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        model: config.llm.model,
-        temperature,
-        messages,
-      }),
-      signal: AbortSignal.timeout(config.llm.timeoutMs),
+    const target = activeChatTarget();
+    const completion = await completeOpenAiChat({
+      baseUrl: target.baseUrl,
+      apiKey: target.apiKey,
+      model: target.model,
+      messages,
+      temperature,
+      timeoutMs: target.timeoutMs,
     });
-
-    const text = await response.text();
-    const body: unknown = text ? JSON.parse(text) : null;
-    if (!response.ok) {
-      const detail =
-        body && typeof body === "object" && "error" in body
-          ? JSON.stringify((body as { error: unknown }).error)
-          : text || response.statusText;
-      throw new Error(detail || "Language model request failed");
-    }
-
-    const parsed = completionSchema.parse(body);
-    reported = {
-      prompt: parsed.usage?.prompt_tokens,
-      completion: parsed.usage?.completion_tokens,
-    };
-    const answer = parsed.choices[0]?.message.content?.trim() ?? "";
-    completionText = answer;
-    if (!answer) {
+    reported = { prompt: completion.promptTokens, completion: completion.completionTokens };
+    completionText = completion.text;
+    if (!completion.text) {
       throw new Error("Language model returned an empty answer");
     }
-    return { text: answer, model: parsed.model || config.llm.model };
+    return { text: completion.text, model: completion.model };
   } finally {
     rememberUsage(promptText, completionText, reported);
   }

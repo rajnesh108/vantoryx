@@ -13,7 +13,7 @@ How branches move is in [docs/github-flow.md](docs/github-flow.md).
 | **V4**  | MCP                | External tools through MCP           |
 | **V5**  | Evaluation         | RAG/agent quality measurement        |
 | **V6**  | Observability      | Traces, latency, token/cost tracking |
-| **V7**  | Local LLM          | Ollama/llama.cpp/LM Studio           |
+| **V7**  | Local LLM          | Ollama/llama.cpp                     |
 | **V8**  | GPU inference      | vLLM/TensorRT-LLM concepts           |
 | **V9**  | Quantization       | FP16 → INT8/INT4                     |
 | **V10** | AWS                | Production cloud architecture        |

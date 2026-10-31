@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import path from "path";
+import { defaultModel, parseProvider, providerFamily, resolveLlmBaseUrl } from "./services/localLlm";
 import { bundledCalculatorServer, parseMcpServers } from "./services/mcp/servers";
 
 const repoRoot = path.resolve(__dirname, "../..");
@@ -67,12 +68,7 @@ export const config = {
   agentEnabled: boolEnv("AGENT_ENABLED", true),
   agentMaxRetries: intEnv("AGENT_MAX_RETRIES", 1, 0, 3),
   agentMaxQueries: intEnv("AGENT_MAX_QUERIES", 3, 1, 3),
-  llm: {
-    baseUrl: (process.env.LLM_BASE_URL || "http://127.0.0.1:11434/v1").replace(/\/$/, ""),
-    apiKey: process.env.LLM_API_KEY?.trim() || "",
-    model: process.env.LLM_MODEL?.trim() || "llama3.1",
-    timeoutMs: intEnv("LLM_TIMEOUT_MS", 120_000, 1_000, 600_000),
-  },
+  llm: llmConfig(),
   admin: {
     username: process.env.ADMIN_USERNAME?.trim() || "admin",
     password: process.env.ADMIN_PASSWORD?.trim() || "admin",
@@ -93,4 +89,18 @@ export const config = {
 
 if (config.chunkOverlap >= config.chunkSize) {
   throw new Error("CHUNK_OVERLAP must be smaller than CHUNK_SIZE");
+}
+
+function llmConfig() {
+  const provider = parseProvider(process.env.LLM_PROVIDER);
+  const gguf = process.env.LLM_GGUF?.trim() || "";
+  return {
+    provider,
+    family: providerFamily(provider),
+    baseUrl: resolveLlmBaseUrl(provider, process.env.LLM_BASE_URL),
+    apiKey: process.env.LLM_API_KEY?.trim() || "",
+    model: process.env.LLM_MODEL?.trim() || defaultModel(provider, gguf),
+    gguf,
+    timeoutMs: intEnv("LLM_TIMEOUT_MS", 120_000, 1_000, 600_000),
+  };
 }

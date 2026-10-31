@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { askQuestion, getHealth, type HealthStatus } from "../api";
+import { askQuestion, getHealth, getLlmOptions, type HealthStatus, type LlmOption } from "../api";
 import { ChatPanel, type Turn } from "../components/ChatPanel";
 
 export function SearchPage() {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [health, setHealth] = useState<HealthStatus | null | undefined>(undefined);
+  const [models, setModels] = useState<LlmOption[]>([]);
+  const [preferred, setPreferred] = useState<{ provider: LlmOption["provider"]; model: string } | null>(null);
   const [asking, setAsking] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -20,13 +22,22 @@ export function SearchPage() {
     return () => window.clearInterval(timer);
   }, []);
 
-  async function handleAsk(question: string) {
+  useEffect(() => {
+    void getLlmOptions()
+      .then((catalog) => {
+        setModels(catalog.options);
+        setPreferred({ provider: catalog.provider, model: catalog.model });
+      })
+      .catch(() => setModels([]));
+  }, []);
+
+  async function handleAsk(question: string, llm: { provider: LlmOption["provider"]; model: string } | null) {
     const id = crypto.randomUUID();
     setAsking(true);
     setActionError(null);
     setTurns((current) => [...current, { id, question, pending: true }]);
     try {
-      const result = await askQuestion(question, []);
+      const result = await askQuestion(question, [], llm ?? undefined);
       setTurns((current) =>
         current.map((turn) =>
           turn.id === id
@@ -57,7 +68,13 @@ export function SearchPage() {
   return (
     <>
       {banner && <div className={`banner ${banner.tone}`}>{banner.text}</div>}
-      <ChatPanel turns={turns} asking={asking} onAsk={(question) => void handleAsk(question)} />
+      <ChatPanel
+        turns={turns}
+        asking={asking}
+        models={models}
+        preferred={preferred}
+        onAsk={(question, llm) => void handleAsk(question, llm)}
+      />
     </>
   );
 }
@@ -75,6 +92,18 @@ function bannerFor(
   }
   if (health.embeddings === "loading") {
     return { tone: "info", text: "Local embedding model is loading. The first download can take a few minutes." };
+  }
+  if (health.llm.status === "unavailable") {
+    const where = `${health.llm.label} is unreachable at ${health.llm.baseUrl}.`;
+    const text = health.llm.family === "cloud" ? where : `${where} Start the local model server.`;
+    return { tone: "info", text };
+  }
+  if (health.llm.status === "model-missing") {
+    const text =
+      health.llm.family === "cloud"
+        ? `${health.llm.label} does not list ${health.llm.model}.`
+        : `Load ${health.llm.model} in ${health.llm.label}. The server is up.`;
+    return { tone: "info", text };
   }
   return null;
 }

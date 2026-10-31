@@ -7,7 +7,7 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/chunking.test.ts tests/fusion.test.ts tests/agent.test.ts tests/mcp.test.ts tests/evaluation.test.ts tests/observe.test.ts"
+    "test": "tsx --test tests/chunking.test.ts tests/fusion.test.ts tests/agent.test.ts tests/mcp.test.ts tests/evaluation.test.ts tests/observe.test.ts tests/local-llm.test.ts tests/chat-provider.test.ts tests/llm-choice.test.ts"
   },
   "engines": {
     "node": ">=20"

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { AgentTrace, AnswerOutcome, Citation, Observation } from "../api";
+import type { AgentTrace, AnswerOutcome, Citation, LlmOption, Observation } from "../api";
 import { pageLabel } from "../format";
 import { Logo } from "./Logo";
 
@@ -19,7 +19,9 @@ export interface Turn {
 interface ChatPanelProps {
   turns: Turn[];
   asking: boolean;
-  onAsk: (question: string) => void;
+  models: LlmOption[];
+  preferred: { provider: LlmOption["provider"]; model: string } | null;
+  onAsk: (question: string, llm: { provider: LlmOption["provider"]; model: string } | null) => void;
 }
 
 const FEATURES = [
@@ -87,14 +89,16 @@ const PREVIEW_SOURCES = [
   ["AIIMS", "Page 23"],
 ];
 
-export function ChatPanel({ turns, asking, onAsk }: ChatPanelProps) {
+export function ChatPanel({ turns, asking, models, preferred, onAsk }: ChatPanelProps) {
   const [question, setQuestion] = useState("");
+  const [modelKey, setModelKey] = useState("");
   const latest = turns[turns.length - 1];
+  const selected = pickModel(models, modelKey, preferred);
 
   function submit(raw = question) {
     const trimmed = raw.trim();
     if (!trimmed || asking) return;
-    onAsk(trimmed);
+    onAsk(trimmed, selected ? { provider: selected.provider, model: selected.model } : null);
   }
 
   return (
@@ -139,6 +143,23 @@ export function ChatPanel({ turns, asking, onAsk }: ChatPanelProps) {
         <p className="formula">
           Real documents <span>+</span> Advanced AI <span>=</span> Better healthcare insights
         </p>
+        <label className="model-pick">
+          <span>Model</span>
+          <select
+            aria-label="Model"
+            value={selected ? choiceKey(selected) : ""}
+            disabled={asking || models.length === 0}
+            onChange={(event) => setModelKey(event.target.value)}
+          >
+            {models.length === 0 && <option value="">Loading models…</option>}
+            {models.map((model) => (
+              <option key={choiceKey(model)} value={choiceKey(model)} disabled={!model.available}>
+                {model.label} · {model.model}
+                {model.detail ? ` — ${model.detail}` : ""}
+              </option>
+            ))}
+          </select>
+        </label>
         <form
           className="pill-search"
           onSubmit={(event) => {
@@ -269,6 +290,29 @@ export function ChatPanel({ turns, asking, onAsk }: ChatPanelProps) {
       </footer>
     </div>
   );
+}
+
+function choiceKey(model: LlmOption): string {
+  return `${model.provider}\t${model.model}`;
+}
+
+function pickModel(
+  models: LlmOption[],
+  key: string,
+  preferred: { provider: LlmOption["provider"]; model: string } | null
+): LlmOption | undefined {
+  const chosen = models.find((model) => model.available && choiceKey(model) === key);
+  if (chosen) return chosen;
+  if (!key && preferred) {
+    const match = models.find(
+      (model) =>
+        model.available &&
+        model.provider === preferred.provider &&
+        (model.model === preferred.model || model.model.split(":")[0] === preferred.model)
+    );
+    if (match) return match;
+  }
+  return models.find((model) => model.available);
 }
 
 function organizationName(category: string | undefined): string {

@@ -14,19 +14,25 @@ Terms used in Vantoryx for retrieval-augmented generation and the agent. A passa
 | Citation | One source the answer may use. It is a retrieved chunk or a tool result, numbered from the top of the list: the first item is `[1]`. The record holds the document name, category, pages, text, and score. |
 | Context | The numbered sources pasted into the prompt before the question. The model is told to answer only from that text. |
 | Cosine similarity | A measure of how close two vectors point. pgvector uses cosine distance to rank chunk embeddings against the question embedding. |
+| CPU vs GPU | A CPU has fewer strong cores and can run a model one step at a time. A GPU has thousands of small cores and runs the matrix math of an LLM in parallel, limited by VRAM. See [gpu-vs-cpu.md](./gpu-vs-cpu.md). |
 | Cross-encoder | A model that reads the question and one chunk together and scores that pair. The reranker is this kind of model (`BAAI/bge-reranker-base` by default). |
 | Embedding | A vector of 768 numbers that stands for the meaning of a text. The embedding server builds one for every chunk and for each search query. |
 | Evaluation | A fixed set of questions scored on hybrid retrieval and the agent. Recall, answer quality, sufficiency, latency, retries, and token cost are in [v5.md](./v5.md). |
+| GGUF | GPT-Generated Unified Format. One file of quantized weights and metadata that llama.cpp loads. Levels such as Q8_0 and Q4_K_M trade some quality for less memory. See [gguf.md](./gguf.md). |
 | Grade | A yes-or-no check by the chat model, at temperature 0, on whether the current passages state the facts the question asks for. It returns `sufficient` and a short reason. It is not BM25, fusion, or the reranker. |
 | Grounded answer | An answer whose factual sentences come from the numbered sources and carry a citation such as `[1]`. |
 | Hybrid retrieval | Search that runs BM25 and vector search, then merges the two lists. This is the V2 path inside every agent retrieval. |
 | Ingestion | The upload path: extract PDF text, chunk it, embed each chunk, and store the rows. A document is searchable when its status is `ready`. |
 | LangGraph | The library that runs the agent as a graph of nodes: plan, route, retrieve, grade, rewrite, and tools. |
-| LLM | The large language model that plans, grades, rewrites, chooses a tool, and writes the answer. Vantoryx calls any OpenAI-compatible chat API, including a local Ollama model. |
+| llama | Meta's family of language models. `llama3.1` is the model name in `LLM_MODEL` when Ollama is the provider. The model is separate from the program that runs it. |
+| llama.cpp | The local program that loads a GGUF file and serves chat. In Vantoryx the provider is `llamacpp` and the server listens on port 8081. See [v7.md](./v7.md). |
+| LLM | The chat model behind planning, grading, tools, and the answer. A common provider interface calls a local llama.cpp or Ollama server, or a cloud OpenAI model. See [v7.md](./v7.md). |
+| LLM inference | Running the model on a prompt to produce the next tokens. Planning, grading, tool choice, and the answer are all inference calls. |
 | MCP | Model Context Protocol. A standard way for the agent to call tools on a separate server. The bundled server exposes unit conversion and BMI over stdio. |
 | Observation | A record of one chat question: path, outcome, latency, model calls, tokens, and cost. The API keeps the latest ones in memory. See [v6.md](./v6.md). |
 | Passage | The text of a retrieved chunk, including the page span. The grader reads passages. A tool result is a citation, not a passage, because it did not come from a PDF page. |
 | pgvector | The PostgreSQL extension that stores the 768-number embeddings and searches them with an HNSW index. |
+| Prefill vs decode | Prefill reads the whole prompt at once and fills the KV cache. Decode then writes one new token at a time. Prefill is the heavy compute pass. Decode is where token speed shows up. See [prefill-vs-decode.md](./prefill-vs-decode.md). |
 | Prompt | The system rules plus the user message sent to the LLM. For an answer, the user message is the numbered sources and then the question. |
 | Query planning | The plan step. The model turns one question into one to three search queries. A question with two independent parts can become two queries. |
 | RAG | Retrieval-augmented generation. Search the indexed PDFs first, then ask the LLM to write an answer from the retrieved text. |

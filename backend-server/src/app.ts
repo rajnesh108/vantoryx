@@ -6,6 +6,7 @@ import { chatRouter } from "./routes/chat";
 import { documentsRouter } from "./routes/documents";
 import { evaluationRouter } from "./routes/evaluation";
 import { healthRouter } from "./routes/health";
+import { llmRouter } from "./routes/llm";
 import { observationsRouter } from "./routes/observations";
 import { HttpError } from "./lib/http";
 
@@ -19,6 +20,7 @@ export function buildApp() {
   );
   app.use(express.json({ limit: "1mb" }));
   app.use("/api/health", healthRouter);
+  app.use("/api/llm", llmRouter);
   app.use("/api/auth", authRouter);
   app.use("/api/documents", documentsRouter);
   app.use("/api/chat", chatRouter);

@@ -50,7 +50,17 @@ export interface HealthStatus {
   status: "ok" | "degraded";
   database: string;
   embeddings: string;
-  llm: { model: string; baseUrl: string };
+  llm: {
+    provider: "ollama" | "llamacpp" | "openai";
+    family: "local" | "cloud";
+    label: string;
+    model: string;
+    baseUrl: string;
+    gguf: string | null;
+    status: "ok" | "unavailable" | "model-missing";
+    models: string[];
+    detail: string | null;
+  };
   mcp?: { enabled: boolean; servers: string[] };
 }
 
@@ -211,11 +221,33 @@ export function deleteDocument(id: string): Promise<void> {
   return request(`/api/documents/${id}`, { method: "DELETE" });
 }
 
-export function askQuestion(question: string, documentIds: string[]): Promise<ChatResult> {
+export interface LlmOption {
+  provider: "ollama" | "llamacpp" | "openai";
+  label: string;
+  model: string;
+  available: boolean;
+  detail: string | null;
+}
+
+export interface LlmCatalog {
+  provider: LlmOption["provider"];
+  model: string;
+  options: LlmOption[];
+}
+
+export function getLlmOptions(): Promise<LlmCatalog> {
+  return request("/api/llm/options");
+}
+
+export function askQuestion(
+  question: string,
+  documentIds: string[],
+  llm?: { provider: LlmOption["provider"]; model: string }
+): Promise<ChatResult> {
   return request("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question, documentIds }),
+    body: JSON.stringify({ question, documentIds, ...(llm ? { llm } : {}) }),
   });
 }
 

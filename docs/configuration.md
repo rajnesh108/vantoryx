@@ -38,6 +38,7 @@ Vantoryx consists of the following services:
 | Backend Server | API and application logic | Configured by the backend |
 | Embedding Server | Generates vector embeddings | http://127.0.0.1:8000 |
 | Ollama | Runs local LLM models | http://127.0.0.1:11434 |
+| llama.cpp | Local GGUF chat server | http://127.0.0.1:8081/v1 |
 | PostgreSQL | Database with pgvector support | localhost:5432 |
 | pgAdmin | Web-based PostgreSQL administration | http://localhost:8080/browser/ |
 | JupyterLab | Python development environment | http://localhost:8888 (default) |

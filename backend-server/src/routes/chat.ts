@@ -4,6 +4,8 @@ import { DOCUMENT_CATEGORIES } from "../categories";
 import { config } from "../config";
 import { asyncHandler } from "../lib/http";
 import { runAgenticRetrieval } from "../services/agent/run";
+import { LLM_PROVIDERS } from "../services/localLlm";
+import { chatTargetFor, withChatTarget } from "../services/llmChoice";
 import { usageFromError, withLlmUsage, type LlmUsage } from "../services/llm";
 import { buildObservation, currentRates, observationLog, type Observation, type ObservationPath } from "../services/observe";
 import { abstainAnswer, answerFromCitations, decideOutcome, type AnswerOutcome } from "../services/outcome";
@@ -14,6 +16,12 @@ const chatSchema = z.object({
   question: z.string().trim().min(1, "Enter a question.").max(2000, "Question must be 2000 characters or fewer."),
   documentIds: z.array(z.string().uuid()).max(50).optional(),
   categories: z.array(z.enum(DOCUMENT_CATEGORIES)).max(DOCUMENT_CATEGORIES.length).optional(),
+  llm: z
+    .object({
+      provider: z.enum(LLM_PROVIDERS),
+      model: z.string().trim().min(1, "Choose a model.").max(200),
+    })
+    .optional(),
 });
 
 interface ChatRun {
@@ -33,9 +41,12 @@ chatRouter.post(
   "/",
   asyncHandler(async (req, res) => {
     const body = chatSchema.parse(req.body);
+    const target = body.llm ? chatTargetFor(body.llm.provider, body.llm.model) : null;
     const started = Date.now();
     try {
-      const measured = await withLlmUsage(() => executeChat(body));
+      const measured = await withLlmUsage(() =>
+        target ? withChatTarget(target, () => executeChat(body)) : executeChat(body)
+      );
       const observation = observeRun(body.question, measured.result, measured.usage, Date.now() - started, null);
       res.json({ ...responseOf(measured.result), observation });
     } catch (error) {
