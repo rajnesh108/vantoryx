@@ -35,10 +35,17 @@ Vantoryx consists of the following services:
 | Service | Description | Default URL |
 |---|---|---|
 | Frontend Server | User interface for interacting with Vantoryx | http://localhost:5173 |
-| Backend Server | API and application logic | Configured by the backend |
+| Backend Server | API and application logic | http://localhost:4000 |
+| Evaluation page | Fixed-question scoring in the UI | http://localhost:5173/evaluate |
+| Evaluation dataset | Question set used by a scoring run | http://localhost:4000/api/evaluation/dataset |
+| Evaluation run | Starts a hybrid or agentic scoring run | http://localhost:4000/api/evaluation/run |
+| Observability page | Latency, tokens, and cost for recent questions | http://localhost:5173/observe |
+| Observations | Recent chat records kept in memory | http://localhost:4000/api/observations |
 | Embedding Server | Generates vector embeddings | http://127.0.0.1:8000 |
 | Ollama | Runs local LLM models | http://127.0.0.1:11434 |
-| llama.cpp | Local GGUF chat server | http://127.0.0.1:8081/v1 |
+| llama.cpp | Local GGUF server (`llama-server`) | http://127.0.0.1:8081 |
+| llama.cpp models | Model list used by health checks | http://127.0.0.1:8081/v1/models |
+| llama.cpp chat | OpenAI-compatible chat completions | http://127.0.0.1:8081/v1/chat/completions |
 | PostgreSQL | Database with pgvector support | localhost:5432 |
 | pgAdmin | Web-based PostgreSQL administration | http://localhost:8080/browser/ |
 | JupyterLab | Python development environment | http://localhost:8888 (default) |
@@ -188,7 +195,7 @@ npm install
 npm run dev
 ```
 
-The backend will start on the port configured in its environment variables or application configuration.
+The backend listens on http://localhost:4000 by default (`PORT=4000`).
 
 Keep the terminal running while using the application.
 
@@ -223,12 +230,19 @@ http://localhost:5173
 | Component | URL |
 |---|---|
 | Vantoryx Frontend | http://localhost:5173 |
+| Backend API | http://localhost:4000 |
+| Evaluation page | http://localhost:5173/evaluate |
+| Evaluation dataset | http://localhost:4000/api/evaluation/dataset |
+| Evaluation run | http://localhost:4000/api/evaluation/run |
+| Observability page | http://localhost:5173/observe |
+| Observations | http://localhost:4000/api/observations |
 | pgAdmin | http://localhost:8080/browser/ |
 | Embedding Server | http://127.0.0.1:8000 |
 | Ollama API | http://127.0.0.1:11434 |
+| llama.cpp server | http://127.0.0.1:8081 |
+| llama.cpp models | http://127.0.0.1:8081/v1/models |
+| llama.cpp chat | http://127.0.0.1:8081/v1/chat/completions |
 | JupyterLab | http://localhost:8888 (default) |
-
-The backend URL depends on the port configured in the backend application.
 
 ## Troubleshooting
 
