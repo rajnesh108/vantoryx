@@ -5,6 +5,7 @@ interface DocumentPanelProps {
   documents: DocumentItem[];
   selected: Record<string, boolean>;
   uploading: boolean;
+  uploadedName?: string | null;
   manage: boolean;
   onToggle: (id: string) => void;
   onUpload: (file: File, category: string) => Promise<void>;
@@ -16,6 +17,7 @@ export function DocumentPanel({
   documents,
   selected,
   uploading,
+  uploadedName,
   manage,
   onToggle,
   onUpload,
@@ -50,6 +52,16 @@ export function DocumentPanel({
               intelligent search and retrieval.
             </p>
             <p>Scanned PDFs or image-only pages are currently not supported.</p>
+            {uploading && (
+              <p className="upload-status" role="status">
+                Processing
+              </p>
+            )}
+            {uploadedName && !uploading && (
+              <p className="upload-success" role="status">
+                {uploadedName} uploaded.
+              </p>
+            )}
           </>
         ) : (
           <p>Choose ready documents to search. New PDFs are added from the admin panel.</p>
@@ -85,9 +97,14 @@ export function DocumentPanel({
               void takeFile(event.dataTransfer.files[0]);
             }}
           >
-            <span>{uploading ? "Uploading…" : "Drop a medical PDF"}</span>
-            <small>or click to browse · 40 MB max</small>
+            <span>{uploading ? "Processing" : "Drop a medical PDF"}</span>
+            <small>{uploading ? "Please wait" : "or click to browse · 40 MB max"}</small>
           </button>
+          {uploadedName && !uploading && (
+            <p className="upload-success" role="status">
+              {uploadedName} uploaded.
+            </p>
+          )}
           <input
             ref={inputRef}
             className="file-input"

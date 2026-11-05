@@ -22,6 +22,7 @@ export function AdminPage({ path, onNavigate }: { path: string; onNavigate: (pat
   const [submitting, setSubmitting] = useState(false);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [activeUploadId, setActiveUploadId] = useState<string | null>(null);
   const [health, setHealth] = useState<HealthStatus | null | undefined>(undefined);
   const [actionError, setActionError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -45,7 +46,9 @@ export function AdminPage({ path, onNavigate }: { path: string; onNavigate: (pat
       .catch(() => setHealth(null));
   }, []);
 
-  const processing = documents.some((document) => document.status === "processing");
+  const activeUpload = documents.find((document) => document.id === activeUploadId) ?? null;
+  const preparing = uploading || activeUpload?.status === "processing";
+  const uploadedName = activeUpload?.status === "ready" ? activeUpload.originalName : null;
 
   useEffect(() => {
     if (!user) return;
@@ -53,12 +56,17 @@ export function AdminPage({ path, onNavigate }: { path: string; onNavigate: (pat
   }, [refresh, user]);
 
   useEffect(() => {
-    if (!user || !processing) return;
+    if (!user || activeUpload?.status !== "processing") return;
     const timer = window.setInterval(() => {
       void refresh();
     }, 2000);
     return () => window.clearInterval(timer);
-  }, [processing, refresh, user]);
+  }, [activeUpload?.status, refresh, user]);
+
+  useEffect(() => {
+    if (activeUpload?.status !== "failed") return;
+    setActionError(activeUpload.error ?? "The PDF could not be prepared.");
+  }, [activeUpload?.error, activeUpload?.status]);
 
   async function handleLogin(event: FormEvent) {
     event.preventDefault();
@@ -85,14 +93,20 @@ export function AdminPage({ path, onNavigate }: { path: string; onNavigate: (pat
     }
     setUser(null);
     setDocuments([]);
+    setActiveUploadId(null);
   }
 
   async function handleUpload(file: File, category: string) {
     setUploading(true);
     setActionError(null);
+    setActiveUploadId(null);
     try {
       const created = await uploadDocument(file, category);
       setDocuments((current) => [created, ...current.filter((document) => document.id !== created.id)]);
+      setActiveUploadId(created.id);
+      if (created.status === "failed") {
+        setActionError(created.error ?? "The PDF could not be prepared.");
+      }
     } catch (reason) {
       setActionError(messageOf(reason));
     } finally {
@@ -104,6 +118,7 @@ export function AdminPage({ path, onNavigate }: { path: string; onNavigate: (pat
     setActionError(null);
     try {
       await deleteDocument(id);
+      if (id === activeUploadId) setActiveUploadId(null);
       setDocuments((current) => current.filter((document) => document.id !== id));
     } catch (reason) {
       setActionError(messageOf(reason));
@@ -165,7 +180,7 @@ export function AdminPage({ path, onNavigate }: { path: string; onNavigate: (pat
         <nav className="admin-nav" aria-label="Admin">
           <button type="button" className={section === "upload" ? "active" : undefined} onClick={() => setSection("upload")}>
             <AdminIcon name="upload" />
-            Upload
+            {preparing ? "Processing" : "Upload"}
           </button>
           <button type="button" className={section === "documents" ? "active" : undefined} onClick={() => setSection("documents")}>
             <AdminIcon name="documents" />
@@ -188,8 +203,9 @@ export function AdminPage({ path, onNavigate }: { path: string; onNavigate: (pat
                 <DocumentPanel
                   documents={documents}
                   selected={{}}
-                  uploading={uploading}
-                  manage
+                uploading={preparing}
+                uploadedName={uploadedName}
+                manage
                   onToggle={() => undefined}
                   onUpload={handleUpload}
                   onDelete={handleDelete}

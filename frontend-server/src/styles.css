@@ -428,6 +428,25 @@ main.admin-content {
 .dropzone.dragging, .dropzone:hover { border-color: var(--green); background: var(--green-soft); }
 .dropzone:disabled { cursor: progress; opacity: 0.7; }
 
+.upload-status,
+.upload-success {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.upload-status {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.upload-success {
+  background: var(--green-soft);
+  color: var(--green-deep);
+}
+
 .file-input { display: none; }
 
 .doc-list {
