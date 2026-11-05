@@ -44,7 +44,7 @@ documentsRouter.post(
   asyncHandler(async (req, res) => {
     if (!req.file) throw new HttpError(400, "Choose a PDF to upload.");
     if (!isPdf(req.file.buffer)) throw new HttpError(400, "Only PDF files are supported.");
-    const category = typeof req.body.category === "string" ? req.body.category : "";
+    const category = typeof req.body.category === "string" ? req.body.category.trim().toLowerCase() : "";
     if (!isDocumentCategory(category)) throw new HttpError(400, "Choose a document category.");
 
     const saved = await savePdf(req.file.originalname, req.file.buffer);

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { AgentTrace, AnswerOutcome, Citation, LlmOption, Observation } from "../api";
 import { pageLabel } from "../format";
-import { Logo } from "./Logo";
+import { APP_VERSION, Logo } from "./Logo";
 
 export interface Turn {
   id: string;
@@ -106,15 +106,15 @@ export function ChatPanel({ turns, asking, models, preferred, onAsk }: ChatPanel
       <section className="landing-copy">
         <div className="brand-lockup">
           <Logo className="brand-mark" />
-          <div>
+          <div className="brand-name">
             <h1>Vantoryx</h1>
+            <span className="version">{APP_VERSION}</span>
           </div>
         </div>
         <p className="platform">AI Systems &amp; Inference Platform</p>
         <p className="mission">
-          Vantoryx helps you search and understand healthcare information using the power of AI. It combines advanced
-          retrieval, agentic workflows and local or cloud inference to deliver accurate, grounded answers from trusted
-          medical sources.
+          Vantoryx uses AI-powered retrieval and agentic workflows to deliver accurate, grounded healthcare insights
+          from trusted medical sources, with local or cloud inference.
         </p>
         <div className="feature-grid">
           {FEATURES.map((feature) => (
@@ -124,16 +124,6 @@ export function ChatPanel({ turns, asking, models, preferred, onAsk }: ChatPanel
               </span>
               <h2>{feature.title}</h2>
               <p>{feature.text}</p>
-              {feature.title === "Observability & Evaluation" && (
-                <>
-                  <a className="feature-more" href="/evaluate">
-                    Open evaluation
-                  </a>
-                  <a className="feature-more" href="/observe">
-                    Open observability
-                  </a>
-                </>
-              )}
             </article>
           ))}
         </div>
@@ -154,7 +144,7 @@ export function ChatPanel({ turns, asking, models, preferred, onAsk }: ChatPanel
             {models.length === 0 && <option value="">Loading models…</option>}
             {models.map((model) => (
               <option key={choiceKey(model)} value={choiceKey(model)} disabled={!model.available}>
-                {model.label} · {model.model}
+                {model.label} · {modelTitle(model.model)}
                 {model.detail ? ` — ${model.detail}` : ""}
               </option>
             ))}
@@ -294,6 +284,11 @@ export function ChatPanel({ turns, asking, models, preferred, onAsk }: ChatPanel
 
 function choiceKey(model: LlmOption): string {
   return `${model.provider}\t${model.model}`;
+}
+
+function modelTitle(model: string): string {
+  const file = model.trim().split(/[/\\]/).pop() ?? model.trim();
+  return file.replace(/\.gguf$/i, "") || model.trim();
 }
 
 function pickModel(

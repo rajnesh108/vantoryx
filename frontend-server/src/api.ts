@@ -3,6 +3,7 @@ export type DocumentStatus = "processing" | "ready" | "failed";
 export interface DocumentItem {
   id: string;
   originalName: string;
+  category?: string;
   status: DocumentStatus;
   pageCount: number | null;
   chunkCount: number;
@@ -65,7 +66,7 @@ export interface HealthStatus {
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, { ...init, credentials: "include" });
+  const response = await fetch(url, { ...init, credentials: "include", cache: "no-store" });
   if (response.status === 204) {
     return undefined as T;
   }
@@ -211,9 +212,10 @@ export function listDocuments(): Promise<DocumentItem[]> {
   return request("/api/documents");
 }
 
-export function uploadDocument(file: File): Promise<DocumentItem> {
+export function uploadDocument(file: File, category: string): Promise<DocumentItem> {
   const data = new FormData();
   data.append("file", file);
+  data.append("category", category);
   return request("/api/documents", { method: "POST", body: data });
 }
 
@@ -264,7 +266,7 @@ export function logout(): Promise<void> {
 }
 
 export async function currentUser(): Promise<{ username: string } | null> {
-  const response = await fetch("/api/auth/me", { credentials: "include" });
+  const response = await fetch("/api/auth/me", { credentials: "include", cache: "no-store" });
   if (response.status === 401) return null;
   const text = await response.text();
   const body = text ? (JSON.parse(text) as { username?: string; error?: string }) : {};
@@ -275,7 +277,7 @@ export async function currentUser(): Promise<{ username: string } | null> {
 }
 
 export async function getHealth(): Promise<HealthStatus> {
-  const response = await fetch("/api/health");
+  const response = await fetch("/api/health", { cache: "no-store" });
   const text = await response.text();
   const body = text ? (JSON.parse(text) as HealthStatus) : null;
   if (!body || typeof body.status !== "string") {

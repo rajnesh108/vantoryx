@@ -1,3 +1,5 @@
+export const APP_VERSION = "v1.0.0";
+
 export function Logo({ className = "logo" }: { className?: string }) {
   const id = className.replace(/\s+/g, "-");
   return (

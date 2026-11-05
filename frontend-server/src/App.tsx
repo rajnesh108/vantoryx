@@ -10,12 +10,16 @@ export function App() {
   const admin = path.startsWith("/admin");
   const evaluate = path.startsWith("/evaluate");
   const observe = path.startsWith("/observe");
-  const framed = admin || evaluate || observe;
+  const framed = evaluate || observe;
+
+  if (admin) {
+    return <AdminPage path={path} onNavigate={navigate} />;
+  }
 
   return (
     <div className={framed ? "app" : "app home"}>
       {framed && <Topbar path={path} onNavigate={navigate} />}
-      {admin ? <AdminPage /> : evaluate ? <EvaluationPage /> : observe ? <ObservationPage /> : <SearchPage />}
+      {evaluate ? <EvaluationPage /> : observe ? <ObservationPage /> : <SearchPage />}
     </div>
   );
 }

@@ -75,7 +75,7 @@ export function EvaluationPage() {
                   checked={source === "index"}
                   onChange={() => setSource("index")}
                 />
-                Indexed PDFs
+                Uploaded PDFs
               </label>
             </fieldset>
             <fieldset>
@@ -96,7 +96,7 @@ export function EvaluationPage() {
           <p className="eval-note">
             {source === "fixture"
               ? "Fixture runs four bundled notes and does not read the database. It still calls the chat model."
-              : "Indexed PDFs runs these questions on ready documents. The labels were written for the fixture notes, so recall can be zero on a different corpus."}
+              : "Uploaded PDFs runs these questions on ready documents. The labels were written for the fixture notes, so recall can be zero on a different corpus."}
             {" "}
             A full run calls the model for each plan, grade, and answer, and can take several minutes.
           </p>
@@ -107,7 +107,7 @@ export function EvaluationPage() {
             <section className="eval-card">
               <h2>Summary</h2>
               <p className="eval-meta">
-                {report.source === "fixture" ? "Fixture notes" : "Indexed PDFs"} · Recall@{report.k} · {report.generatedAt}
+                {report.source === "fixture" ? "Fixture notes" : "Uploaded PDFs"} · Recall@{report.k} · {report.generatedAt}
               </p>
               {report.summary.length === 0 ? (
                 <p>No question finished, so there is no average to show.</p>

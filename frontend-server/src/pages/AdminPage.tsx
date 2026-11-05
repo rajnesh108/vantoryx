@@ -10,9 +10,12 @@ import {
   type DocumentItem,
   type HealthStatus,
 } from "../api";
-import { DocumentPanel } from "../components/DocumentPanel";
+import { DocumentList, DocumentPanel } from "../components/DocumentPanel";
+import { Topbar } from "../components/Topbar";
 
-export function AdminPage() {
+type AdminSection = "upload" | "documents";
+
+export function AdminPage({ path, onNavigate }: { path: string; onNavigate: (path: string) => void }) {
   const [user, setUser] = useState<string | null | undefined>(undefined);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -22,6 +25,7 @@ export function AdminPage() {
   const [health, setHealth] = useState<HealthStatus | null | undefined>(undefined);
   const [actionError, setActionError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [section, setSection] = useState<AdminSection>("upload");
 
   const refresh = useCallback(async () => {
     try {
@@ -46,9 +50,13 @@ export function AdminPage() {
   useEffect(() => {
     if (!user) return;
     void refresh();
+  }, [refresh, user]);
+
+  useEffect(() => {
+    if (!user || !processing) return;
     const timer = window.setInterval(() => {
       void refresh();
-    }, processing ? 2000 : 15000);
+    }, 2000);
     return () => window.clearInterval(timer);
   }, [processing, refresh, user]);
 
@@ -79,11 +87,11 @@ export function AdminPage() {
     setDocuments([]);
   }
 
-  async function handleUpload(file: File) {
+  async function handleUpload(file: File, category: string) {
     setUploading(true);
     setActionError(null);
     try {
-      const created = await uploadDocument(file);
+      const created = await uploadDocument(file, category);
       setDocuments((current) => [created, ...current.filter((document) => document.id !== created.id)]);
     } catch (reason) {
       setActionError(messageOf(reason));
@@ -105,18 +113,24 @@ export function AdminPage() {
   const banner = bannerFor(health, user ? actionError : null, user ? loadError : null);
 
   if (user === undefined) {
-    return <main className="narrow" />;
+    return (
+      <div className="app">
+        <Topbar path={path} onNavigate={onNavigate} />
+        <main className="narrow" />
+      </div>
+    );
   }
 
   if (!user) {
     return (
-      <>
+      <div className="app">
+        <Topbar path={path} onNavigate={onNavigate} />
         {actionError && <div className="banner bad">{actionError}</div>}
         <main className="narrow">
           <form className="login-card" onSubmit={(event) => void handleLogin(event)}>
-            <div>
-              <h2>Admin sign in</h2>
-              <p>Upload and remove indexed documents.</p>
+            <div className="login-intro">
+              <h2>Vantoryx Control Center</h2>
+              <p>Sign in to manage your AI platform, knowledge sources, and system configurations.</p>
             </div>
             <label className="field">
               Username
@@ -140,36 +154,86 @@ export function AdminPage() {
             </button>
           </form>
         </main>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      {banner && <div className={`banner ${banner.tone}`}>{banner.text}</div>}
-      <main className="narrow manage">
-        <div className="admin-stack">
-          <div className="admin-bar">
-            <p>
-              Signed in as <strong>{user}</strong>
-            </p>
-            <button type="button" className="text-button sign-out" onClick={() => void handleLogout()}>
-              Sign out
-            </button>
-          </div>
-          <DocumentPanel
-            documents={documents}
-            selected={{}}
-            uploading={uploading}
-            manage
-            onToggle={() => undefined}
-            onUpload={handleUpload}
-            onDelete={handleDelete}
-            onError={setActionError}
-          />
+    <div className="app">
+      <Topbar path={path} onNavigate={onNavigate} />
+      <div className="admin-shell">
+        <nav className="admin-nav" aria-label="Admin">
+          <button type="button" className={section === "upload" ? "active" : undefined} onClick={() => setSection("upload")}>
+            <AdminIcon name="upload" />
+            Upload
+          </button>
+          <button type="button" className={section === "documents" ? "active" : undefined} onClick={() => setSection("documents")}>
+            <AdminIcon name="documents" />
+            Documents
+          </button>
+        </nav>
+        <div className="admin-stage">
+          {banner && <div className={`banner ${banner.tone}`}>{banner.text}</div>}
+          <main className="admin-content">
+            <div className="admin-stack">
+              <div className="admin-bar">
+                <p>
+                  Signed in as <strong>{user}</strong>
+                </p>
+                <button type="button" className="text-button sign-out" onClick={() => void handleLogout()}>
+                  Sign out
+                </button>
+              </div>
+              {section === "upload" ? (
+                <DocumentPanel
+                  documents={documents}
+                  selected={{}}
+                  uploading={uploading}
+                  manage
+                  onToggle={() => undefined}
+                  onUpload={handleUpload}
+                  onDelete={handleDelete}
+                  onError={setActionError}
+                />
+              ) : (
+                <section className="sidebar" aria-label="Uploaded documents">
+                  <div className="sidebar-head">
+                    <h2>Documents</h2>
+                    <p>PDFs already saved for search.</p>
+                  </div>
+                  <DocumentList
+                    documents={documents}
+                    manage
+                    selected={{}}
+                    onToggle={() => undefined}
+                    onDelete={handleDelete}
+                  />
+                </section>
+              )}
+            </div>
+          </main>
         </div>
-      </main>
-    </>
+      </div>
+    </div>
+  );
+}
+
+function AdminIcon({ name }: { name: "documents" | "upload" }) {
+  if (name === "upload") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 16V4.5" />
+        <path d="M7.5 9 12 4.5 16.5 9" />
+        <path d="M5 15.5V19a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19v-3.5" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 3.5h7.2L19 8.2V20.5H7z" />
+      <path d="M14.2 3.5V8.2H19" />
+      <path d="M10 12.5h5.5M10 16h5.5" />
+    </svg>
   );
 }
 

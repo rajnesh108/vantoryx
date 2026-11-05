@@ -1,5 +1,5 @@
 import type { MouseEvent } from "react";
-import { Logo } from "./Logo";
+import { APP_VERSION, Logo } from "./Logo";
 
 interface TopbarProps {
   path: string;
@@ -25,6 +25,7 @@ export function Topbar({ path, onNavigate }: TopbarProps) {
           <p className="eyebrow">{admin ? "Admin" : evaluate ? "Evaluation" : observe ? "Observability" : "Search"}</p>
           <h1>
             <span className="word">Vantoryx</span>
+            <span className="version">{APP_VERSION}</span>
             <span className="product">
               <span className="dash" aria-hidden="true">
                 —
@@ -57,7 +58,6 @@ export function Topbar({ path, onNavigate }: TopbarProps) {
             Admin
           </a>
         </nav>
-        {admin && <p className="tagline">Sign in to index clinical PDFs.</p>}
         {evaluate && <p className="tagline">Measure retrieval and answers on a fixed question set.</p>}
         {observe && <p className="tagline">Latency, tokens, and cost for recent questions.</p>}
       </div>

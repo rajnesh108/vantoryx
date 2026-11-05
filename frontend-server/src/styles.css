@@ -99,6 +99,19 @@ h1 {
 
 h1 .word { font-weight: 700; color: #083746; }
 
+.version {
+  align-self: center;
+  padding: 2px 7px;
+  border: 1px solid #b7d4d8;
+  border-radius: 999px;
+  background: #f4fbfb;
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+}
+
 h1 .dash {
   margin-right: 8px;
   color: var(--green);
@@ -173,9 +186,65 @@ main.narrow {
   align-content: start;
 }
 
-main.manage,
-main.public {
+main.public,
+main.admin-content {
   grid-template-columns: minmax(0, 760px);
+}
+
+.admin-shell {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  align-items: stretch;
+  min-height: 0;
+}
+
+.admin-nav {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 22px 12px;
+  background: #fff;
+  border-right: 1px solid var(--line);
+}
+
+.admin-nav button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #083746;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-nav button.active {
+  background: var(--green-soft);
+  color: var(--green-deep);
+}
+
+.admin-nav svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-stage {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 
 .public-search {
@@ -258,6 +327,8 @@ main.public {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: min(760px, 100%);
+  justify-self: center;
   min-height: 0;
 }
 
@@ -285,7 +356,8 @@ main.public {
 }
 
 .login-card h2 { font-size: 28px; letter-spacing: -0.03em; color: #083746; }
-.login-card p { margin: 8px 0 0; color: var(--muted); line-height: 1.5; }
+.login-intro { text-align: center; }
+.login-card p { margin: 8px 0 0; color: var(--muted); line-height: 1.5; font-size: 14px; }
 
 .field {
   display: flex;
@@ -295,7 +367,7 @@ main.public {
   font-weight: 600;
 }
 
-.field input {
+.field input, .field select {
   font: inherit;
   font-weight: 500;
   border: 1px solid var(--line);
@@ -305,7 +377,7 @@ main.public {
   background: #fff;
 }
 
-.field input:focus { outline: 2px solid rgba(12, 124, 134, 0.28); border-color: var(--green); }
+.field input:focus, .field select:focus { outline: 2px solid rgba(12, 124, 134, 0.28); border-color: var(--green); }
 
 .login-card button {
   background: var(--green);
@@ -523,7 +595,15 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--green); 
   .topbar, main { padding-left: 16px; padding-right: 16px; }
   .topbar { flex-direction: column; align-items: start; }
   .topbar-side, .tagline { align-items: flex-start; text-align: left; }
-  main, main.narrow, main.manage, main.public, main.eval, main.observe { grid-template-columns: 1fr; }
+  main, main.narrow, main.manage, main.public, main.admin-content, main.eval, main.observe { grid-template-columns: 1fr; }
+  .admin-shell { grid-template-columns: 1fr; }
+  .admin-nav {
+    min-height: 0;
+    flex-direction: row;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .admin-nav button { width: auto; }
   .search-hero { padding-top: 28px; }
   .search-hero h2 { font-size: 32px; }
   .search-bar { border-radius: 18px; padding-left: 14px; }
@@ -553,6 +633,12 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--green); 
 }
 
 .brand-mark { width: 42px; height: 42px; flex: none; }
+
+.brand-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
 .landing h1 {
   display: block;
@@ -588,18 +674,6 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--green); 
 
 .feature h2 { margin-top: 10px; font-size: 15px; color: #083746; }
 .feature p { margin: 6px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
-
-.feature-more {
-  display: inline-block;
-  margin-top: 8px;
-  margin-right: 12px;
-  color: var(--green-deep);
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.feature-more:hover { text-decoration: underline; }
 
 .feature-icon {
   display: grid;

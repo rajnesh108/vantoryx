@@ -12,6 +12,11 @@ import { HttpError } from "./lib/http";
 
 export function buildApp() {
   const app = express();
+  app.set("etag", false);
+  app.use((_req, res, next) => {
+    res.setHeader("Cache-Control", "no-store");
+    next();
+  });
   app.use(
     cors({
       origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
